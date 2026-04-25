@@ -51,7 +51,7 @@ result:
     ret
     
 exit:
-    li a0, 50
+    li a0, 51
     j exit_with_error
 
 
