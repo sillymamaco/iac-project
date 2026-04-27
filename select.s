@@ -32,8 +32,9 @@ select:
     #verificar se ultrapassa os limites do vetor (...)
     blt a2, a3, OutOfBounds
     #inicializar o contador
-    lw t0, 0(a1)
-    slli t0, a3, 2
+    mv t0, a1
+    slli t1, a3, 2
+    add t0,t0,t1
     lw a1, 0(t0)
     li a0, 0
     ret
