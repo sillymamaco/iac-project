@@ -1,75 +1,51 @@
+# You can change these values to test your solution.
 .data
-# You can change this array to test other values
-array: .word -3, 2, -1, 7, -2   # Initial array values				 
+ARRAY: .word -6 -1 6 1
+SIZE:  .word 4
+INDEX: .word 2
 
 .text
-
 main:
-  la a0, array      # a0 = pointer to array
-  li a1, 5          # a1 = array length
-  li a2, 3          # a2 = element index
-
-  jal ra, select      # Call select function
-
-  # Result: a0 contains the value of the selected element
-
+  la a1, ARRAY      # a1 = pointer to array
+  lw a2, SIZE       # a2 = array length
+  lw a3, INDEX      # a3 = element index
+  jal ra, select    # call select function
 exit:
-  li a7, 10              # Exit syscall code
-  ecall                  # Terminate the program
-
+  li a7, 10         # exit syscall code
+  ecall             # terminate the program
 
 # ==========================================================================
 # FUNCTION: select
 #   This function selects an element from an integer array.
 # Arguments:
-#   a0 = pointer to int array
-#   a1 = array length
-#   a2 = element index
+#   a1 = pointer to int array
+#   a2 = array length
+#   a3 = element index
 # Returns:
-#   a0 = value of the selected element
-# Exceptions:
-#   - If invalid access (index out of bounds),
-#     this function terminates the program with error code 51
+#   a0 = status code
+#   a1 = value of the selected element
 # ===========================================================================
 select:
-	select:
-    #verificar se ultrapassa os limites do vetor (...)
-    blt a2, a1, exit
+    #verifica se o indice é valido
+    li t0, 0
+    blt a3, t0, InvalidIndex
+    #verificar se ultrapassa os limites do vetor
+    bge a3, a2, OutOfBounds
     #inicializar o contador
-    mv t0, a0
-    li t1,0
-      
-loop:
-    beq t1,a1, result
-    addi t0, t0, 4
-    addi t1, t1, 1
-    j loop
-    
-result:
-    lw t2, 0(t0)
-    mv a0, t2
+    mv t0, a1
+    slli t1, a3, 2
+    add t0,t0,t1
+    lw a1, 0(t0)
+    li a0, 0
     ret
     
-exit:
+InvalidIndex:
     li a0, 51
-    j exit_with_error
+    j select_end
 
+OutOfBounds:
+    li a0, 100
+    j select_end
 
-
-
-
-
-
-
-loop_end:
-  jr ra                  # normal return
-
-
-# Exits the program with an error 
-# Arguments: 
-# a0 (int) is the error code 
-# You need to load a0 the error to a0 before to jump here
-exit_with_error:
-  li a7, 93            # Exit system call
-  ecall                # Terminate program
-
+select_end:
+  jr ra               # return to the caller
