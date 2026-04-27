@@ -27,10 +27,10 @@ exit:
 # ===========================================================================
 select:
     #verifica se o indice é valido
-    li t0, 1
+    li t0, 0
     blt a3, t0, InvalidIndex
-    #verificar se ultrapassa os limites do vetor (...)
-    blt a2, a3, OutOfBounds
+    #verificar se ultrapassa os limites do vetor
+    bge a3, a2, OutOfBounds
     #inicializar o contador
     mv t0, a1
     slli t1, a3, 2
