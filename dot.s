@@ -41,11 +41,21 @@ dot:
 		add t3, a1, t2 			# t3 = A[i]'s address
         lw t3, 0(t3) 			# t3 = A[i]'s value
 		# B
-		add t4, a2, t2 			# t4 = A[i]'s address
-        lw t4, 0(t4) 			# t4 = A[i]'s value
+		add t4, a2, t2 			# t4 = B[i]'s address
+        lw t4, 0(t4) 			# t4 = B[i]'s value
 
-		mul t5, t3, t4 			# multiplies the values
-		add t0, t0, t5 			# adds it to the result
+		mul t5, t3, t4 			
+        mulh t6, t3, t4        # check for overflow (MSB different than expected) 
+        srai a4, t5, 31                 
+        bne t6, a4, overflow_error 
+
+		add a4, t0, t5 			# adds it to the result
+        xor a5, t0, a4          # check for overflow (different sign than expected)
+        xor t6, t5, a4
+        and a5, a5, t6         
+        bltz a5, overflow_error
+        
+        mv t0, a4
 
 		addi t1, t1, 1 			# increments
 		j loop_start			# repeat
@@ -55,6 +65,11 @@ dot:
 		li a1, 0
 		jr ra
 
+
+    overflow_error:
+        li a0, 200           
+        li a1, 0             
+        jr ra
 dot_end:
 	li a0, 0
 	mv a1, t0

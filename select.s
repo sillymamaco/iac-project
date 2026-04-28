@@ -37,7 +37,7 @@ select:
     add t0,t0,t1
     lw a1, 0(t0)
     li a0, 0
-    ret
+    j select_end
     
 InvalidIndex:
     li a0, 51
