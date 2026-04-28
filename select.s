@@ -26,12 +26,14 @@ exit:
 #   a1 = value of the selected element
 # ===========================================================================
 select:
-    #verifica se o indice é valido
+    # check for valid index
     li t0, 0
     blt a3, t0, InvalidIndex
-    #verificar se ultrapassa os limites do vetor
+
+    # check for array bounds
     bge a3, a2, OutOfBounds
-    #inicializar o contador
+
+    # init the counter 
     mv t0, a1
     slli t1, a3, 2
     add t0,t0,t1
