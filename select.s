@@ -26,9 +26,9 @@ exit:
 #   a1 = value of the selected element
 # ===========================================================================
 select:
-    # check for valid index
+    # check for valid size
     li t0, 0
-    blt a3, t0, InvalidIndex
+    blt a2, t0, InvalidSize
 
     # check for array bounds
     bge a3, a2, OutOfBounds
@@ -41,8 +41,8 @@ select:
     li a0, 0
     j select_end
     
-InvalidIndex:
-    li a0, 51
+InvalidSize:
+    li a0, 50
     j select_end
 
 OutOfBounds:

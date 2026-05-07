@@ -70,7 +70,8 @@ dot:
         li a0, 200           
         li a1, 0             
         jr ra
+
 dot_end:
 	li a0, 0
 	mv a1, t0
-  	jr ra               # return to the caller
+	jr ra               # return to the caller
