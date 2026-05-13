@@ -191,8 +191,30 @@ tokens_to_indices: #MARGARIDA
 # (in)     a1: address of the vocabulary embeddings matrix (int*)
 # (in)     a2: address of the input indices array (int*)
 # (in)     a3: number of tokens in the input (int)
-build_input_embeddings_matrix: #IRINA
-    # TODO
+build_input_embeddings_matrix: 
+    li t0, CONST_DIMENSION
+    li t6, CONST_DIMENSION
+    slli t0, t0, 2
+
+    mv t1, x0
+    ext_loop: beq t1, a3, ext_loop_end
+        lw t2, 0(a2)
+        mul t3, t0, t2
+        add t3, t3, a1
+        mv t4, x0
+        int_loop: beq t4, t6, end_int_loop
+            lw t5, 0(t3)
+            sw t5, 0(a0)
+            addi t3, t3, 4
+            addi a0, a0, 4
+            addi t4, t4, 1
+            j int_loop
+        end_int_loop:
+            addi a2, a2, 4
+            addi t1, t1, 1
+            j ext_loop
+    ext_loop_end: jr ra
+
 
 # (in/out) a0: address of the output matrix to fill (int*)
 # (in)     a1: address of the first matrix (int*)
