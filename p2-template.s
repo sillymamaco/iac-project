@@ -201,7 +201,7 @@ build_input_embeddings_matrix: #IRINA
 # (in)     a4: address of the second matrix (int*)
 # (in)     a5: #rows of the second matrix (int)
 # (in)     a6: #columns of the second matrix (int)
-matrix_multiply: #IRINA
+matrix_multiply: 
     addi sp, sp, -16
     sw s0, 12(sp)
     sw s1, 8(sp)
@@ -254,8 +254,56 @@ matrix_multiply: #IRINA
 # (in)     a3: #rows of Q and K (int)
 # (in)     a4: #columns of Q and K (int)
 # (in)     a5: target token index for which we want to compute the score (int)
-compute_scores: #IRINA
-    # TODO
+compute_scores:
+    addi sp, sp, -36
+    sw ra, 0(sp)
+    sw s0, 4(sp)
+    sw s1, 8(sp)
+    sw s2, 12(sp)
+    sw s3, 16(sp)
+    sw s4, 20(sp)
+    sw s5, 24(sp)
+    sw s6, 28(sp)
+    sw s7, 32(sp)
+
+    mv s0, a1
+    mv s1, a2
+    mv s2, a3
+    mv s3, a4
+    mv s4, a5
+    
+    mul t0, s3, s4 #line we are looking for
+    slli t0, t0, 2
+    add  a1, a1, t0
+    mv s7, a1
+    mv s5, x0
+    mv s6, a0
+    loop: beq s5, s2, end_loop
+        mv a2, s1
+        mv a3, s3
+        mv a1, s7
+        jal dot
+        sw a1, 0(s6)
+        addi s6, s6, 4
+        slli t0, s3, 2
+        add s1, s1, t0
+        addi s5, s5, 1
+        j loop
+    end_loop:
+        lw ra, 0(sp)
+        lw s0, 4(sp) 
+        lw s1, 8(sp)
+        lw s2, 12(sp)
+        lw s3, 16(sp)
+        lw s4, 20(sp)
+        lw s5, 24(sp)
+        lw s6, 28(sp)
+        lw s7, 32(sp)
+        addi sp, sp, 36
+        
+        jr ra
+
+
 
 # (out) a0: address of the selected vector (int*)
 # (in)  a1: address of matrix (int*)
