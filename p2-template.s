@@ -167,7 +167,7 @@ main:
 # (in)     a0: filename address (char*)
 # (in/out) a1: destination buffer
 # (in)     a2: maximum number of bytes to read
-read_file:
+read_file:  #MARGARIDA
     # TODO
 
 # Assumes the matrix is stored in the buffer as space-separated integers.
@@ -176,7 +176,7 @@ read_file:
 # (in/out) a0: address of the matrix to fill (int*)
 # (out)    a1: number of rows in the matrix (int)
 # (in)     a1: address of the buffer containing the matrix data (char*)
-parse_matrix_buffer:
+parse_matrix_buffer: #MARGARIDA
     # TODO
 
 # Converts the input tokens into their corresponding indices in the vocabulary.
@@ -184,14 +184,14 @@ parse_matrix_buffer:
 # (out)    a1: size of input indices vector (number of tokens in input)
 # (in)     a2: address to input buffer
 # (in)     a3: address to vocabulary buffer
-tokens_to_indices:
+tokens_to_indices: #MARGARIDA
     # TODO
 
 # (in/out) a0: address of the output matrix to fill (int*)
 # (in)     a1: address of the vocabulary embeddings matrix (int*)
 # (in)     a2: address of the input indices array (int*)
 # (in)     a3: number of tokens in the input (int)
-build_input_embeddings_matrix:
+build_input_embeddings_matrix: #IRINA
     # TODO
 
 # (in/out) a0: address of the output matrix to fill (int*)
@@ -201,8 +201,52 @@ build_input_embeddings_matrix:
 # (in)     a4: address of the second matrix (int*)
 # (in)     a5: #rows of the second matrix (int)
 # (in)     a6: #columns of the second matrix (int)
-matrix_multiply:
-    # TODO
+matrix_multiply: #IRINA
+    addi sp, sp, -16
+    sw s0, 12(sp)
+    sw s1, 8(sp)
+    sw s2, 4(sp)
+    sw s3, 0(sp)
+    mv s0, x0
+    ext_loop: beq s0, a2, end_ext_loop
+        mv s1, x0
+        mid_loop: beq s1, a6, end_mid_loop
+            mv s2, x0
+            mv s3, x0
+            int_loop: beq s2, a3, end_int_loop
+                mul t0, s0, a3 #position from matrix A
+                add t0, s2, t0
+                slli t0, t0, 2
+                add t0, t0, a1
+
+                mul t1, s2, a6 #position of matrix B
+                add t1, t1, s1
+                slli t1, t1, 2
+                add t1, t1, a4
+
+                lw t2, 0(t0)
+                lw t3, 0(t1)
+                mul t2, t2, t3 
+                add s3, s3, t2
+
+                addi s2, s2, 1
+                j int_loop
+            end_int_loop: mul t4, s0, a6
+                add t4, t4, s1
+                slli t4, t4, 2
+                add t4, t4, a0
+                sw s3, 0(t4)
+                addi s1, s1, 1
+                j mid_loop
+            end_mid_loop: addi s0, s0, 1
+                j ext_loop
+    end_ext_loop:
+        lw s0, 12(sp)
+        lw s1, 8(sp)
+        lw s2, 4(sp)
+        lw s3, 0(sp)
+        addi sp, sp, 16
+        jr ra
 
 # (in/out) a0: address of the output scores vector to fill (int*)
 # (in)     a1: address of Q matrix (int*)
@@ -210,7 +254,7 @@ matrix_multiply:
 # (in)     a3: #rows of Q and K (int)
 # (in)     a4: #columns of Q and K (int)
 # (in)     a5: target token index for which we want to compute the score (int)
-compute_scores:
+compute_scores: #IRINA
     # TODO
 
 # (out) a0: address of the selected vector (int*)
@@ -218,14 +262,14 @@ compute_scores:
 # (in)  a2: #rows (int)
 # (in)  a3: #cols (int)
 # (in)  a4: target row
-select_vector_in_matrix:
+select_vector_in_matrix: #JOSE
     # TODO
 
 # (out) a0: index of the predicted token in the vocabulary (int)
 # (in)  a0: address of target vector (int*)
 # (in)  a1: vocabulary embeddings address (int*)
 # (in)  a2: number of tokens in vocabulary (int)
-decide_next_token:
+decide_next_token:  #JOSE
     # TODO
 
 #############################################################################################################
