@@ -212,23 +212,23 @@ build_input_embeddings_matrix:
     slli t0, t0, 2
 
     mv t1, x0
-    ext_loop: beq t1, a3, ext_loop_end
+    build_input_embeddings_matrix_ext_loop: beq t1, a3, build_input_embeddings_matrix_ext_loop_end
         lw t2, 0(a2)
         mul t3, t0, t2
         add t3, t3, a1
         mv t4, x0
-        int_loop: beq t4, t6, end_int_loop
+        build_input_embeddings_matrix_int_loop: beq t4, t6, build_input_embeddings_matrix_end_int_loop
             lw t5, 0(t3)
             sw t5, 0(a0)
             addi t3, t3, 4
             addi a0, a0, 4
             addi t4, t4, 1
-            j int_loop
-        end_int_loop:
+            j build_input_embeddings_matrix_int_loop
+        build_input_embeddings_matrix_end_int_loop:
             addi a2, a2, 4
             addi t1, t1, 1
-            j ext_loop
-    ext_loop_end: jr ra
+            j build_input_embeddings_matrix_ext_loop
+    build_input_embeddings_matrix_ext_loop_end: jr ra
 
 
 # (in/out) a0: address of the output matrix to fill (int*)
@@ -245,12 +245,12 @@ matrix_multiply:
     sw s2, 4(sp)
     sw s3, 0(sp)
     mv s0, x0
-    ext_loop: beq s0, a2, end_ext_loop
+    matrix_multiply_ext_loop: beq s0, a2, matrix_multiply_end_ext_loop
         mv s1, x0
-        mid_loop: beq s1, a6, end_mid_loop
+        matrix_multiply_mid_loop: beq s1, a6, matrix_multiply_end_mid_loop
             mv s2, x0
             mv s3, x0
-            int_loop: beq s2, a3, end_int_loop
+            matrix_multiply_int_loop: beq s2, a3, matrix_multiply_end_int_loop
                 mul t0, s0, a3 #position from matrix A
                 add t0, s2, t0
                 slli t0, t0, 2
@@ -267,17 +267,17 @@ matrix_multiply:
                 add s3, s3, t2
 
                 addi s2, s2, 1
-                j int_loop
-            end_int_loop: mul t4, s0, a6
+                j matrix_multiply_int_loop
+            matrix_multiply_end_int_loop: mul t4, s0, a6
                 add t4, t4, s1
                 slli t4, t4, 2
                 add t4, t4, a0
                 sw s3, 0(t4)
                 addi s1, s1, 1
-                j mid_loop
-            end_mid_loop: addi s0, s0, 1
-                j ext_loop
-    end_ext_loop:
+                j matrix_multiply_mid_loop
+            matrix_multiply_end_mid_loop: addi s0, s0, 1
+                j matrix_multiply_ext_loop
+    matrix_multiply_end_ext_loop:
         lw s0, 12(sp)
         lw s1, 8(sp)
         lw s2, 4(sp)
@@ -315,7 +315,7 @@ compute_scores:
     mv s7, a1
     mv s5, x0
     mv s6, a0
-    loop: beq s5, s2, end_loop
+    compute_scores_loop: beq s5, s2, compute_scores_end_loop
         mv a2, s1
         mv a3, s3
         mv a1, s7
@@ -325,8 +325,8 @@ compute_scores:
         slli t0, s3, 2
         add s1, s1, t0
         addi s5, s5, 1
-        j loop
-    end_loop:
+        j compute_scores_loop
+    compute_scores_end_loop:
         lw ra, 0(sp)
         lw s0, 4(sp) 
         lw s1, 8(sp)
