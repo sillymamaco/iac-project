@@ -294,22 +294,30 @@ main:
 # (in/out) a1: destination buffer
 # (in)     a2: maximum number of bytes to read
 read_file:
-    li a7, 1024										# Open File
-    mv s0, a0
-    mv s1, a1
+    mv t1, a1
+	mv t2, a2
     li a1, 0
+    li a7, 1024										# Open File
     ecall
 
-    mv a1, s1
+	bltz a0, open_failed
+
+    mv t0, a0
+    mv a1, t1
+	mv a2, t2
     li a7, 63										# Read File
     ecall
 
-    mv t0, a0
+    mv t1, a0
+	mv a0, t0
     li a7, 57										# Close File
     ecall
 
-    mv a0, t0
+    mv a0, t1
     jr ra
+
+open_failed: 
+	jr ra											# Just so it doesn't clog in case of error
 
 # Assumes the matrix is stored in the buffer as space-separated integers.
 # Assumes columns are separated by 1 space (' '), and rows by 1 newline ('\n').
