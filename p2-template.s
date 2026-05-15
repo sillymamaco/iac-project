@@ -174,8 +174,6 @@ read_file:
     li a7, 1024										# Open File
     ecall
 
-	bltz a0, open_failed
-
     mv t0, a0
     mv a1, t1
 	mv a2, t2
@@ -189,18 +187,15 @@ read_file:
 
     mv a0, t1
     jr ra
-
-open_failed: 
-	jr ra											# Just so it doesn't clog in case of error
-
+    
 # Assumes the matrix is stored in the buffer as space-separated integers.
 # Assumes columns are separated by 1 space (' '), and rows by 1 newline ('\n').
 # Assumes only signed integers are provided.
 # (in/out) a0: address of the matrix to fill (int*)
 # (out)    a1: number of rows in the matrix (int)
 # (in)     a1: address of the buffer containing the matrix data (char*)
-parse_matrix_buffer: #MARGARIDA
-    # TODO
+parse_matrix_buffer:
+    
 
 # Converts the input tokens into their corresponding indices in the vocabulary.
 # (in/out) a0: address of input indices vector to fill (int*)
