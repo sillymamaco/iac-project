@@ -171,18 +171,18 @@ read_file:
     mv t1, a1
 	mv t2, a2
     li a1, 0
-    li a7, 1024										# Open File
+    li a7, CONST_SYSCALL_OPEN						# Open File
     ecall
 
     mv t0, a0
     mv a1, t1
 	mv a2, t2
-    li a7, 63										# Read File
+    li a7, CONST_SYSCALL_READ						# Read File
     ecall
 
     mv t1, a0
 	mv a0, t0
-    li a7, 57										# Close File
+    li a7, CONST_SYSCALL_CLOSE						# Close File
     ecall
 
     mv a0, t1
@@ -195,7 +195,75 @@ read_file:
 # (out)    a1: number of rows in the matrix (int)
 # (in)     a1: address of the buffer containing the matrix data (char*)
 parse_matrix_buffer:
+    addi sp, sp, -4
+    sw s0, 0(sp)
+
+    li t1, 0                                        # Accumulator of number
+    li t2, CONST_CHAR_NEWLINE                       # 10 -> '\n'
+    li t3, CONST_CHAR_ZERO                          # 48 -> 0 em decimal
+    li t4, 0x39                                     # 57 -> 9 em decimal
+    li t5, 0                                        # Number of lines
+    li t6, 10
+    li t7, CONST_CHAR_HYPHEN                        # 45 -> '-'
+    li s0, 0
+
+    loop_parse_matrix_buffer: 
+        lbu t0, 0(a1)                                   # Register for curr number
+        beq t0, x0, end_of_buffer
+
+        beq t0, t7, negative
+
+        bgt t0, t4, not_num
+        blt t0, t3, not_num
+
+        mul t1, t1, t6                                  # num = num * 10 
+        addi t0, t0, -48                                # converts to ASCII
+        add t1, t1, t0                                  # num = num + dig
+
+        addi a1, a1, 1
+        j loop_parse_matrix_buffer
+
+    not_num:
+        beq t1, x0, not_in_num
+        beq s0, x0,saves_in_matrix
+        neg t1, t1
+
+    saves_in_matrix: 
+        sw t1, 0(a0)
+        addi a0, a0, 4
+        li t1, 0
+        li s0, 0
+
+        beq t0, t2, new_line
+
+    not_in_num:
+        addi a1, a1, 1
+        j loop_parse_matrix_buffer
+
+    negative: 
+        li s0, 1
+        addi a1, a1, 1
+        j loop_parse_matrix_buffer
+
+    new_line: 
+        addi a1, a1, 1
+        addi t5, t5, 1
+        j loop_parse_matrix_buffer
+
+    end_of_buffer: 
+        beq t1, x0, the_end
+        beq s0, x0, save_last
+        neg t1, t1
     
+    save_last: 
+        sw t1, 0(a0)
+        addi t5, t5, 1
+
+    the_end: 
+        mv a1, t5
+        lw s0, 0(sp)
+        addi sp, sp, 4
+        jr ra
 
 # Converts the input tokens into their corresponding indices in the vocabulary.
 # (in/out) a0: address of input indices vector to fill (int*)
