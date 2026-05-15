@@ -204,62 +204,63 @@ parse_matrix_buffer:
     li t4, 0x39                                     # 57 -> 9 em decimal
     li t5, 0                                        # Number of lines
     li t6, 10
-    li t7, CONST_CHAR_HYPHEN                        # 45 -> '-'
     li s0, 0
 
     loop_parse_matrix_buffer: 
-        lbu t0, 0(a1)                                   # Register for curr number
+        lbu t0, 0(a1)                               # Register for curr number
         beq t0, x0, end_of_buffer
 
-        beq t0, t7, negative
+        li t2, CONST_CHAR_HYPHEN                    # '-'
+        beq t0, t2, negative
+        li   t2, CONST_CHAR_NEWLINE                     
 
         bgt t0, t4, not_num
         blt t0, t3, not_num
 
-        mul t1, t1, t6                                  # num = num * 10 
-        addi t0, t0, -48                                # converts to ASCII
-        add t1, t1, t0                                  # num = num + dig
+        mul t1, t1, t6                              # num = num * 10 
+        addi t0, t0, -48                            # Converts to ASCII
+        add t1, t1, t0                              # num = num + dig
 
         addi a1, a1, 1
         j loop_parse_matrix_buffer
 
-    not_num:
-        beq t1, x0, not_in_num
+    not_num:                                        # When it does not find a digit
+        beq t1, x0, not_in_num                      
         beq s0, x0,saves_in_matrix
         neg t1, t1
 
     saves_in_matrix: 
-        sw t1, 0(a0)
-        addi a0, a0, 4
+        sw t1, 0(a0)                                # Stores number in matrix
+        addi a0, a0, 4                      
         li t1, 0
         li s0, 0
 
         beq t0, t2, new_line
 
-    not_in_num:
+    not_in_num:                                     # When not inside a number
         addi a1, a1, 1
         j loop_parse_matrix_buffer
 
-    negative: 
+    negative:                                       # For negative numbers
         li s0, 1
         addi a1, a1, 1
         j loop_parse_matrix_buffer
 
-    new_line: 
+    new_line:                                       # When it finds a '\n'
         addi a1, a1, 1
-        addi t5, t5, 1
+        addi t5, t5, 1                              # Increase counter for return
         j loop_parse_matrix_buffer
 
-    end_of_buffer: 
+    end_of_buffer:                                  # String/Buffer is over ('\0')
         beq t1, x0, the_end
         beq s0, x0, save_last
         neg t1, t1
     
-    save_last: 
+    save_last:                                      # In case something had still to be saved
         sw t1, 0(a0)
         addi t5, t5, 1
 
-    the_end: 
+    the_end:                                        # Finito
         mv a1, t5
         lw s0, 0(sp)
         addi sp, sp, 4
