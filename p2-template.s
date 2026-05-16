@@ -225,7 +225,7 @@ main:
     ###########################################################################
     # Build matrix V
     ###########################################################################
-    la a0, K_MATRIX
+    la a0, V_MATRIX
     lw a1, 48(sp)                   # address matrix E
     lw a2, 44(sp)                   # n.o rows/tokens
     li a3, CONST_DIMENSION
@@ -258,8 +258,7 @@ main:
     # Get the highest score index using argmax
     ###########################################################################
     mv a1, a0
-    li a2, CONST_DIMENSION         # ??? Não teno a certeza ???
-    
+    lw a2, 44(sp)     
     jal ra, argmax
                                    # a1 -> index of the largest element
 
@@ -585,6 +584,9 @@ decide_next_token_loop:
     addi sp, sp, -8
     sw t0, 0(sp)
     sw t2, 4(sp)
+    
+    lw a1, 0(sp)
+    lw a2, 4(sp)
 
     jal ra, dot
 
@@ -610,7 +612,7 @@ decide_next_token_e_maior:
 
 decide_next_token_end:
     mv a0, t0
-    lw ra, 8(sp)
+    lw ra, 12(sp)
     addi sp, sp, 16
     jr ra 
 
