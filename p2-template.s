@@ -33,13 +33,13 @@
 # Data section with static memory reservations.
 # Feel free to add more if needed.
 ###########################################################################
-VOCABULARY_FILENAME:     .string "vocab.txt"
-EMBEDDINGS_FILENAME:     .string "embeddings.txt"
-INPUT_FILENAME:          .string "input.txt"
+VOCABULARY_FILENAME:     .string "/home/sillymamaco/iac-project/vocab.txt"
+EMBEDDINGS_FILENAME:     .string "/home/sillymamaco/iac-project/embeddings.txt"
+INPUT_FILENAME:          .string "/home/sillymamaco/iac-project/input.txt"
 
-W_Q_FILENAME:            .string "W_Q.txt"
-W_K_FILENAME:            .string "W_K.txt"
-W_V_FILENAME:            .string "W_V.txt"
+W_Q_FILENAME:            .string "/home/sillymamaco/iac-project/W_Q.txt"
+W_K_FILENAME:            .string "/home/sillymamaco/iac-project/W_K.txt"
+W_V_FILENAME:            .string "/home/sillymamaco/iac-project/W_V.txt"
 
 VOCAB_BUFFER:            .zero CONST_BUFFER_SIZE                              # Contents of the vocabulary file
 INPUT_BUFFER:            .zero CONST_BUFFER_SIZE                              # Contents of the input file
@@ -160,7 +160,7 @@ main:
     ###########################################################################
     la a0, VOCAB_EMBEDDINGS_MATRIX
     
-    jal ra, parse_matrix_buffer# TODO
+    jal ra, parse_matrix_buffer # TODO
 
     sw a0, 32(sp)                     # address of  matriz E_fich
     sw a1, 36(sp)                     # number of rows in matriz E_fich
@@ -368,7 +368,7 @@ parse_matrix_buffer:
 
         beq t0, t2, new_line
 
-        check_newline:
+        check_new_line:
             beq t0, t2, new_line
             addi a1, a1, 1
             j loop_parse_matrix_buffer
@@ -570,7 +570,7 @@ select_vector_in_matrix:
 # (in)  a1: vocabulary embeddings address (int*)
 # (in)  a2: number of tokens in vocabulary (int)
 decide_next_token:  
-    lw t0, x0        # indice qque quero
+    mv t0, x0        # indice qque quero
     mv t2, a2
     li a3, 4         # n.o colunas
     addi sp, sp, -16
@@ -592,9 +592,8 @@ decide_next_token_loop:
     lw t2, 4(sp)
     addi sp, sp, 8
 
-    bne a0, x0, decide_next_token_fail
     bgt a1, t0, decide_next_token_e_maior
-    beq t2, x0, decide_next_token_next_end
+    beq t2, x0, decide_next_token_end
     
 decide_next_token_incrementa:
     lw a1, 0(sp)
@@ -916,4 +915,5 @@ print_predicted_token_nl:
     lw s0, 4(sp)
     addi sp, sp, 8
     ret
+
 
