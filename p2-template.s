@@ -120,7 +120,7 @@ main:
     ###########################################################################
     la a0, W_K_MATRIX
 
-    jal ra, parse_matrix_bufer
+    jal ra, parse_matrix_buffer
     
     sw a0, 16(sp)                     # address of W_K
     sw a1, 20(sp)                     # number of rows in W_K
@@ -140,7 +140,7 @@ main:
     ###########################################################################
     la a0, W_V_MATRIX
     
-    jal ra, parse_matrix_bufer
+    jal ra, parse_matrix_buffer
 
     sw a0, 24(sp)                     # address of W_V
     sw a1, 28(sp)                     # number of rows in W_V
@@ -160,7 +160,7 @@ main:
     ###########################################################################
     la a0, VOCAB_EMBEDDINGS_MATRIX
     
-    jal ra, parse_matrix_bufer# TODO
+    jal ra, parse_matrix_buffer# TODO
 
     sw a0, 32(sp)                     # address of  matriz E_fich
     sw a1, 36(sp)                     # number of rows in matriz E_fich
@@ -209,11 +209,11 @@ main:
     # Build matrix K
     ###########################################################################
     la a0, K_MATRIX
-    la a1, 48(sp)                   # address matrix E
+    lw a1, 48(sp)                   # address matrix E
     lw a2, 44(sp)                   # n.o rows/tokens
     li a3, CONST_DIMENSION
 
-    la a4, 16(sp)                   # address matrix W_K
+    lw a4, 16(sp)                   # address matrix W_K
     lw a5, 20(sp)                   # n.o rows
     li a6, CONST_DIMENSION
 
@@ -226,11 +226,11 @@ main:
     # Build matrix V
     ###########################################################################
     la a0, K_MATRIX
-    la a1, 48(sp)                   # address matrix E
+    lw a1, 48(sp)                   # address matrix E
     lw a2, 44(sp)                   # n.o rows/tokens
     li a3, CONST_DIMENSION
 
-    la a4, 24(sp)                   # address matrix W_V
+    lw a4, 24(sp)                   # address matrix W_V
     lw a5, 28(sp)                   # n.o rows
     li a6, CONST_DIMENSION
 
@@ -332,6 +332,7 @@ parse_matrix_buffer:
     li t5, 0                                        # Number of lines
     li t6, 10
     li s0, 0
+    li a2, 0
 
     loop_parse_matrix_buffer: 
         lbu t0, 0(a1)                               # Register for curr number
@@ -347,12 +348,14 @@ parse_matrix_buffer:
         mul t1, t1, t6                              # num = num * 10 
         addi t0, t0, -48                            # Converts to ASCII
         add t1, t1, t0                              # num = num + dig
+        
+        li a2, 1
 
         addi a1, a1, 1
         j loop_parse_matrix_buffer
 
     not_num:                                        # When it does not find a digit
-        beq t1, x0, not_in_num                      
+        beq a2, x0, check_new_line                      
         beq s0, x0,saves_in_matrix
         neg t1, t1
 
@@ -361,8 +364,14 @@ parse_matrix_buffer:
         addi a0, a0, 4                      
         li t1, 0
         li s0, 0
+        li a2, 0
 
         beq t0, t2, new_line
+
+        check_newline:
+            beq t0, t2, new_line
+            addi a1, a1, 1
+            j loop_parse_matrix_buffer
 
     not_in_num:                                     # When not inside a number
         addi a1, a1, 1
@@ -379,7 +388,7 @@ parse_matrix_buffer:
         j loop_parse_matrix_buffer
 
     end_of_buffer:                                  # String/Buffer is over ('\0')
-        beq t1, x0, the_end
+        beq a2, x0, the_end
         beq s0, x0, save_last
         neg t1, t1
     
@@ -400,7 +409,7 @@ parse_matrix_buffer:
 # (in)     a3: address to vocabulary buffer
 tokens_to_indices: #MARGARIDA
     # TODO
-
+ jr ra
 # (in/out) a0: address of the output matrix to fill (int*)
 # (in)     a1: address of the vocabulary embeddings matrix (int*)
 # (in)     a2: address of the input indices array (int*)
@@ -547,7 +556,7 @@ compute_scores:
 # (in)  a3: #cols (int)
 # (in)  a4: target row
 select_vector_in_matrix:
-    #a3*(a4-1)*4
+    # a3*(a4-1)*4
     addi a4, a4, -1
     mul a4, a4, a3
     slli a4, a4, 2
