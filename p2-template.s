@@ -65,7 +65,7 @@ main:
     ###########################################################################
     # Read vocabulary
     ###########################################################################
-    lw a0, VOCABULARY_FILENAME
+    la a0, VOCABULARY_FILENAME
     la a1, VOCAB_BUFFER 
     li a2, CONST_BUFFER_SIZE
 
@@ -77,9 +77,9 @@ main:
     ###########################################################################
     # Read input
     ###########################################################################
-    lw a0, INPUT_FILENAME
+    la a0, INPUT_FILENAME
     la a1, INPUT_BUFFER 
-    lli a2, CONST_BUFFER_SIZE
+    li a2, CONST_BUFFER_SIZE
 
     jal ra, read_file
     
@@ -88,7 +88,7 @@ main:
     ###########################################################################
     # Read W_Q matrix
     ###########################################################################
-    lw a0, W_Q_FILENAME
+    la a0, W_Q_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
 
@@ -108,7 +108,7 @@ main:
     ###########################################################################
     # Read W_K matrix
     ###########################################################################
-    lw a0, W_K_FILENAME
+    la a0, W_K_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
 
@@ -128,7 +128,7 @@ main:
     ###########################################################################
     # Read W_V matrix
     ###########################################################################
-    lw a0, W_V_FILENAME
+    la a0, W_V_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
 
@@ -148,7 +148,7 @@ main:
     ###########################################################################
     # Read embeddings matrix
     ###########################################################################
-    lw a0, EMBEDDINGS_FILENAME
+    la a0, EMBEDDINGS_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
 
@@ -158,7 +158,7 @@ main:
     ###########################################################################
     # Parse vocabulary embeddings matrix from buffer
     ###########################################################################
-    la, a0, VOCAB_EMBEDDINGS_MATRIX
+    la a0, VOCAB_EMBEDDINGS_MATRIX
     
     jal ra, parse_matrix_bufer# TODO
 
@@ -172,7 +172,7 @@ main:
     lw a2, 4(sp)
     lw a3, 0(sp)
 
-    jal ra, tokens_to indices
+    jal ra, tokens_to_indices
 
     sw a0, 40(sp)                    # address of input indices vector to fill
     sw a1, 44(sp)                    # number of tokens in input
@@ -182,8 +182,8 @@ main:
     ###########################################################################
     la a0, INPUT_EMBEDDINGS_MATRIX
     mv a3, a1       #n.o tokens
-    la a1, 32(sp)   # matriz E_fich
-    la a2, 4(sp)    # input buffer
+    lw a1, 32(sp)   # matriz E_fich
+    lw a2, 4(sp)    # input buffer
 
     jal ra, build_input_embeddings_matrix
 
@@ -193,11 +193,11 @@ main:
     # Build matrix Q
     ###########################################################################
     la a0, Q_MATRIX
-    la a1, 48(sp)                   # address matrix E
+    lw a1, 48(sp)                   # address matrix E
     lw a2, 44(sp)                   # n.o rows/tokens
     li a3, CONST_DIMENSION
 
-    la a4, 8(sp)                    # address matrix W_Q
+    lw a4, 8(sp)                    # address matrix W_Q
     lw a5, 12(sp)                   # n.o rows
     li a6, CONST_DIMENSION
 
@@ -547,9 +547,9 @@ compute_scores:
 # (in)  a3: #cols (int)
 # (in)  a4: target row
 select_vector_in_matrix:
-    a3*(a4-1)*4
+    #a3*(a4-1)*4
     addi a4, a4, -1
-    mull a4, a4, a3
+    mul a4, a4, a3
     slli a4, a4, 2
     add a0, a4, a1
 
