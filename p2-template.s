@@ -69,9 +69,10 @@ main:
     
     sw a1, 4(sp)                       # input buffer
     # Read W_Q matrix
+    la a0, W_Q_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
-
+    
     jal ra, read_file
     
     # Parse W_Q matrix from buffer
@@ -164,6 +165,7 @@ main:
     sw a0, 52(sp)                   # address matrix Q
 
     # Build matrix K
+    la a0, K_MATRIX
     lw a1, 48(sp)                   # address matrix E
     lw a2, 44(sp)                   # n.o rows/tokens
     li a3, CONST_DIMENSION
