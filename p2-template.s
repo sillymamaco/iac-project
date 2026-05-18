@@ -339,7 +339,7 @@ parse_matrix_buffer:
 
         li t2, CONST_CHAR_HYPHEN                    # '-'
         beq t0, t2, negative
-        li   t2, CONST_CHAR_NEWLINE                     
+        li t2, CONST_CHAR_NEWLINE                     
 
         bgt t0, t4, not_num
         blt t0, t3, not_num
@@ -406,9 +406,117 @@ parse_matrix_buffer:
 # (out)    a1: size of input indices vector (number of tokens in input)
 # (in)     a2: address to input buffer
 # (in)     a3: address to vocabulary buffer
-tokens_to_indices: #MARGARIDA
-    # TODO
- jr ra
+tokens_to_indices:
+	# Calling convention moment: 
+    addi sp, sp, -32                                
+    sw ra, 28(sp)         
+    sw s0, 24(sp)         
+    sw s1, 20(sp)         
+    sw s2, 16(sp)         
+    sw s3, 12(sp)         
+
+    mv s0, a0										# s0 -> a0
+    li s1, 0										# s1 -> counter
+    mv s2, a2										# s2 -> a2
+    mv s3, a3										# s3 -> a3
+
+	loop_token_to_indices: 
+		lbu t0, 0(s2)								# char loaded
+		beq t0, x0, end_tokens_function 			# if == '\0'
+
+		li t1, CONST_CHAR_SPACE	
+		beq t0, t1, skip_char						# if == ' '
+		li t1, CONST_CHAR_NEWLINE
+		beq t0, t1, skip_char						# if == '\n'
+		
+		# prepare for jal
+		mv a0, s2				
+		mv a1, s3
+		jal compare_vocab
+
+		# end of comparison -> increments
+		slli t4, s1, 2
+		add t5, s0, t4
+		sw a0, 0(t5)
+		addi s1, s1, 1
+
+	advance_to_next_word:
+		lbu t0, 0(s2) 								# load next char
+		beq t0, x0, end_tokens_function 			# end
+		li t1, CONST_CHAR_SPACE		
+		beq t0, t1, skip_char						# if == ' '
+		li t1, CONST_CHAR_NEWLINE
+		beq t0, t1, skip_char						# if == '\n'	
+		
+		addi s2, s2, 1
+		j advance_to_next_word
+
+	skip_char: 
+		addi s2, s2, 1								# increments
+		j loop_token_to_indices
+
+	end_tokens_function: 
+	# Calling convention moment v2.0: 
+		mv a1, s1
+		lw ra, 28(sp)
+		lw s0, 24(sp)
+		lw s1, 20(sp)
+		lw s2, 16(sp)
+		lw s3, 12(sp)
+		addi sp, sp, 32         
+		jr ra 
+
+	compare_vocab:
+		mv t1, a1
+		li t4, 0
+
+	retry:
+		mv t0, a0
+
+	compare_caracters:
+		lbu t2, 0(t0)
+		lbu t3, 0(t1)
+
+		# a lot of logic to even be able to compare them
+		li t5, CONST_CHAR_SPACE
+		beq t2, t5, end_of_token
+		li t5, CONST_CHAR_NEWLINE
+		beq t2, t5, end_of_token			
+		beq t2, x0, end_of_token
+
+		bne t2, t3, failed_token					# Not the same
+
+		addi t0, t0, 1
+		addi t1, t1, 1
+		j compare_caracters
+
+	end_of_token:
+		li t5, CONST_CHAR_NEWLINE
+		beq t3, t5, found_yey
+		beq t3, x0, found_yey
+
+	failed_token:
+		# nothing happens :(
+
+	next_vocab:
+		lbu t3, 0(t1)
+		beq t3, x0, end_of_vocab
+		addi t1, t1, 1
+		li t5, CONST_CHAR_NEWLINE
+		bne t3, t5, next_vocab
+
+		addi t4, t4, 1 
+		j retry
+
+	found_yey:
+		mv a0, t4									# WE ARE THE CHAMPIOOONS (plays queen)
+		jr ra
+
+	end_of_vocab:
+		li a0, -1
+		jr ra
+	# a meio cansei de comentar... i apologize	
+
 # (in/out) a0: address of the output matrix to fill (int*)
 # (in)     a1: address of the vocabulary embeddings matrix (int*)
 # (in)     a2: address of the input indices array (int*)
