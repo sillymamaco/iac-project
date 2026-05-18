@@ -69,9 +69,10 @@ main:
     
     mv s2, a1                     # input buffer
     # Read W_Q matrix
+    la a0, W_Q_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
-
+    
     jal ra, read_file
     
     # Parse W_Q matrix from buffer
@@ -164,6 +165,7 @@ main:
     sw a0, 52(sp)                   # address matrix Q
 
     # Build matrix K
+    la a0, K_MATRIX
     mv a1, s1                       # address matrix E
     mv a2, s0                       # n.o rows/tokens
     li a3, CONST_DIMENSION
@@ -498,8 +500,7 @@ compute_scores:
 # (in)  a3: #cols (int)
 # (in)  a4: target row
 select_vector_in_matrix:
-    # a3*(a4-1)*4
-    addi a4, a4, -1
+    
     mul a4, a4, a3
     slli a4, a4, 2
     add a0, a4, a1
@@ -511,53 +512,58 @@ select_vector_in_matrix:
 # (in)  a0: address of target vector (int*)
 # (in)  a1: vocabulary embeddings address (int*)
 # (in)  a2: number of tokens in vocabulary (int)
-decide_next_token:  
-    mv t0, x0        # indice qque quero
-    mv t2, a2
-    li a3, 4         # n.o colunas
-    addi sp, sp, -16
-    sw a0, 0(sp)
-    sw a1, 4(sp)
-    sw a3, 8(sp)
-    sw ra, 12(sp)
-    lw a1, 0(sp)
-    lw a2, 4(sp)
+decide_next_token:   
+    addi sp, sp, -28
+    sw ra, 0(sp)
+    sw s0, 4(sp)
+    sw s1, 8(sp)
+    sw s2, 12(sp)
+    sw s3, 16(sp)
+    sw s4, 20(sp)
+    sw s5, 24(sp)
+
+    mv s0, a0
+    mv s1, a1
+    mv s2, a2
+
+    li s3, -2147483648
+    mv s4, zero
+    mv s5, zero
 
 decide_next_token_loop:
-    addi sp, sp, -8
-    sw t0, 0(sp)
-    sw t2, 4(sp)
-    
-    lw a1, 0(sp)
-    lw a2, 4(sp)
+    beq s5, s2, decide_next_token_end
 
-    jal ra, dot
+    mv a1, s0
+    mv a2, s1
+    li a3, 4
+    jal dot
 
-    lw t0, 0(sp)
-    lw t2, 4(sp)
-    addi sp, sp, 8
+    bgt a1, s3, decide_next_token_is_bigger
+    j decide_next_token_increment
 
-    bgt a1, t0, decide_next_token_e_maior
-    beq t2, x0, decide_next_token_end
-    
-decide_next_token_incrementa:
-    lw a1, 0(sp)
-    lw a2, 4(sp)
-    lw a3, 8(sp)
-    addi a2, a2, 16
-    sw a2, 4(sp)
-    addi t2, t2, -1
+decide_next_token_is_bigger:
+    mv s3, a1
+    mv s4, s5
+
+decide_next_token_increment:
+    addi s1, s1, 16
+    addi s5, s5, 1
     j decide_next_token_loop
 
-decide_next_token_e_maior:
-    mv t0, a1
-    bgt a2, x0, decide_next_token_incrementa
-
 decide_next_token_end:
-    mv a0, t0
-    lw ra, 12(sp)
-    addi sp, sp, 16
-    jr ra 
+    mv a0, s4
+    
+    lw ra, 0(sp)
+    lw s0, 4(sp)
+    lw s1, 8(sp)
+    lw s2, 12(sp)
+    lw s3, 16(sp)
+    lw s4, 20(sp)
+    lw s5, 24(sp)
+    addi sp, sp, 28
+    jr ra
+
+
 
 # Dot product and argmax helper functions.
 
