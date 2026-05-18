@@ -67,7 +67,7 @@ main:
 
     jal ra, read_file
     
-    sw a1, 4(sp)                       # input buffer
+    mv s2, a1                     # input buffer
     # Read W_Q matrix
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
@@ -126,33 +126,33 @@ main:
     
     jal ra, parse_matrix_buffer # TODO
 
-    sw a0, 32(sp)                     # address of  matriz E_fich
+    mv s3, a0                         # address of  matriz E_fich
     sw a1, 36(sp)                     # number of rows in matriz E_fich
 
     # Convert input tokens to indices
     la a0, INPUT_INDICES_VECTOR
-    lw a2, 4(sp)
+    mv a2, s2
     lw a3, 0(sp)
 
     jal ra, tokens_to_indices
 
     sw a0, 40(sp)                    # address of input indices vector to fill
-    sw a1, 44(sp)                    # number of tokens in input
+    mv s0, a1                        # number of tokens in input
 
     # Build input embeddings matrix
     la a0, INPUT_EMBEDDINGS_MATRIX
     mv a3, a1       #n.o tokens
-    lw a1, 32(sp)   # matriz E_fich
-    lw a2, 4(sp)    # input buffer
+    mv a1, s3       # matriz E_fich
+    mv a2, s2       # input buffer
 
     jal ra, build_input_embeddings_matrix
 
-    sw a0, 48(sp)                   # address matrix E
+    mv s1, a0                   # address matrix E
 
     # Build matrix Q
     la a0, Q_MATRIX
-    lw a1, 48(sp)                   # address matrix E
-    lw a2, 44(sp)                   # n.o rows/tokens
+    mv a1, s1                       # address matrix E
+    mv a2, s0                       # n.o rows/tokens
     li a3, CONST_DIMENSION
 
     lw a4, 8(sp)                    # address matrix W_Q
@@ -164,8 +164,8 @@ main:
     sw a0, 52(sp)                   # address matrix Q
 
     # Build matrix K
-    lw a1, 48(sp)                   # address matrix E
-    lw a2, 44(sp)                   # n.o rows/tokens
+    mv a1, s1                       # address matrix E
+    mv a2, s0                       # n.o rows/tokens
     li a3, CONST_DIMENSION
 
     lw a4, 16(sp)                   # address matrix W_K
@@ -179,8 +179,8 @@ main:
 
     # Build matrix V
     la a0, V_MATRIX
-    lw a1, 48(sp)                   # address matrix E
-    lw a2, 44(sp)                   # n.o rows/tokens
+    mv a1, s1                       # address matrix E
+    mv a2, s0                       # n.o rows/tokens
     li a3, CONST_DIMENSION
 
     lw a4, 24(sp)                   # address matrix W_V
@@ -197,9 +197,9 @@ main:
     la a0, SCORES_VECTOR
     lw a1, 52(sp)                   # matrix Q*
     lw a2, 56(sp)                   # matrix K*
-    lw a3, 44(sp)                   # rows
+    mv a3, s0                   # rows
     li a4, CONST_DIMENSION          # colums
-    lw t0, 44(sp)                   # n.o tokens
+    mv t0, s0                       # n.o tokens
     addi t0, t0, -1                 # indice do token final
     mv a5, t0
 
@@ -209,21 +209,21 @@ main:
 
     # Get the highest score index using argmax
     mv a1, a0
-    lw a2, 44(sp)     
+    mv a2, s0     
     jal ra, argmax
                                    # a1 -> index of the largest element
 
     # Select chosen vector in V using the index from argmax
     mv a4, a1
     lw a1, 60(sp)
-    lw a2, 44(sp)
+    mv a2, s0
     lw a3, CONST_DIMENSION
 
     jal ra, select_vector_in_matrix
 
                                   # a0 -> selected vector*
     # Pick the next token in the vocabulary with the highest score
-    lw a1, 32(sp)                    
+    mv a1, s3                   
     lw a2, 36(sp)
 
     jal ra, decide_next_token
