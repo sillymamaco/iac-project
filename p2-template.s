@@ -197,7 +197,8 @@ main:
     # Select chosen vector in V using the index from argmax
     mv a4, a1
     lw a1, 60(sp)
-    lw a2, 44(sp)
+
+    mv a2, s0
     li a3, CONST_DIMENSION
     jal ra, select_vector_in_matrix
 
