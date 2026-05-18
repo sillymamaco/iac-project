@@ -134,7 +134,8 @@ main:
     lw a2, 4(sp)
     lw a3, 0(sp)
     jal ra, tokens_to_indices
-    sw a0, 40(sp)                    # array address
+    la t0, INPUT_INDICES_VECTOR
+    sw t0, 40(sp)                    # array address
     sw a1, 44(sp)                    # token count
 
     # Build input embeddings matrix
@@ -143,7 +144,8 @@ main:
     lw a2, 40(sp)
     lw a3, 44(sp)
     jal ra, build_input_embeddings_matrix
-    sw a0, 48(sp)
+    la t0, INPUT_EMBEDDINGS_MATRIX
+    sw t0, 48(sp)
 
     # Build matrix Q
     la a0, Q_MATRIX
@@ -205,11 +207,25 @@ main:
     lw a1, 32(sp)                    
     lw a2, 36(sp)
     jal ra, decide_next_token
+    la t0, VOCAB_BUFFER
+    li t1, 0                            
+find_token_address_loop:
+    beq t1, a0, find_token_address_done 
+    lbu t2, 0(t0)                       
+    addi t0, t0, 1                      
+    li t3, CONST_CHAR_NEWLINE           
+    bne t2, t3, find_token_address_loop 
+    addi t1, t1, 1                      
+    j find_token_address_loop
+
+    find_token_address_done:
+        mv a0, t0                           
+        jal ra, print_predicted_token       
 
     # Terminate program successfully
-    addi sp, sp, 64
-    li a0, 0
-    j exit_with_code                 
+        addi sp, sp, 64
+        li a0, 0
+        j exit_with_code                
 
 # Read from a text file into a buffer.
 # (in)     a0: filename address (char*)
