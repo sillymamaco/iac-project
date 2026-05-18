@@ -215,14 +215,14 @@ main:
 
     # Select chosen vector in V using the index from argmax
     mv a4, a1
-    mv a1, s6
+    lw a1, 60(sp)
 <<<<<<< HEAD
     mv a2, s0
     lw a3, CONST_DIMENSION
 =======
-    lw a2, 44(sp)
+    mv a2, s0
     li a3, CONST_DIMENSION
->>>>>>> 5c3b59408d45a2d00dc64c8da3674955b1ba0d2f
+
 
     jal ra, select_vector_in_matrix
 
