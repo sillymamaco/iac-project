@@ -216,10 +216,6 @@ main:
     # Select chosen vector in V using the index from argmax
     mv a4, a1
     lw a1, 60(sp)
-<<<<<<< HEAD
-    mv a2, s0
-    lw a3, CONST_DIMENSION
-=======
     mv a2, s0
     li a3, CONST_DIMENSION
 
