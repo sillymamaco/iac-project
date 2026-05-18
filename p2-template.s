@@ -1,14 +1,9 @@
-###########################################################################
 # Upper bound constants for static memory reservation
-###########################################################################
 .equ CONST_DIMENSION 4
 .equ CONST_BUFFER_SIZE 1024
 .equ CONST_MAX_VOCAB_TOKENS 100
 .equ CONST_MAX_INPUT_TOKENS 10
-
-###########################################################################
 # System call constants
-###########################################################################
 .equ CONST_SYSCALL_PRINT_INT 1
 .equ CONST_SYSCALL_PRINT_STRING 4
 .equ CONST_SYSCALL_PRINT_CHAR 11
@@ -18,10 +13,7 @@
 .equ CONST_SYSCALL_CLOSE 57
 .equ CONST_SYSCALL_READ 63
 .equ CONST_SYSCALL_WRITE 64
-
-###########################################################################
 # ASCII character constants
-###########################################################################
 .equ CONST_CHAR_EOF 0
 .equ CONST_CHAR_SPACE 32
 .equ CONST_CHAR_NEWLINE 10
@@ -29,10 +21,7 @@
 .equ CONST_CHAR_ZERO 48
 
 .data
-###########################################################################
 # Data section with static memory reservations.
-# Feel free to add more if needed.
-###########################################################################
 VOCABULARY_FILENAME:     .string "/home/sillymamaco/iac-project/vocab.txt"
 EMBEDDINGS_FILENAME:     .string "/home/sillymamaco/iac-project/embeddings.txt"
 INPUT_FILENAME:          .string "/home/sillymamaco/iac-project/input.txt"
@@ -62,52 +51,39 @@ V_MATRIX:                .zero (CONST_MAX_INPUT_TOKENS * CONST_DIMENSION * 4) # 
 
 .text
 main:
-    ###########################################################################
     # Read vocabulary
-    ###########################################################################
     la a0, VOCABULARY_FILENAME
     la a1, VOCAB_BUFFER 
     li a2, CONST_BUFFER_SIZE
 
     jal ra, read_file
     
-    addi sp, sp, -64
+    addi sp, sp, -36
     sw a1, 0(sp)                       # vocabulary buffer
-
-    ###########################################################################
     # Read input
-    ###########################################################################
     la a0, INPUT_FILENAME
     la a1, INPUT_BUFFER 
     li a2, CONST_BUFFER_SIZE
 
     jal ra, read_file
     
-    sw a1, 4(sp)                       # input buffer
-
-    ###########################################################################
+    mv s2, a1                     # input buffer
     # Read W_Q matrix
-    ###########################################################################
     la a0, W_Q_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
-
+    
     jal ra, read_file
     
-
-    ###########################################################################
     # Parse W_Q matrix from buffer
-    ###########################################################################
     la a0, W_Q_MATRIX
 
     jal ra, parse_matrix_buffer
 
-    sw a0, 8(sp)                      # address of W_Q
-    sw a1, 12(sp)                     # number of rows in W_Q
+    sw a0, 4(sp)                      # address of W_Q
+    sw a1, 8(sp)                     # number of rows in W_Q
 
-    ###########################################################################
-    # Read W_K matrix
-    ###########################################################################
+# Read W_K matrix
     la a0, W_K_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
@@ -115,19 +91,15 @@ main:
     jal ra, read_file
     
 
-    ###########################################################################
     # Parse W_K matrix from buffer
-    ###########################################################################
     la a0, W_K_MATRIX
 
     jal ra, parse_matrix_buffer
     
-    sw a0, 16(sp)                     # address of W_K
-    sw a1, 20(sp)                     # number of rows in W_K
+    sw a0, 12(sp)                     # address of W_K
+    sw a1, 16(sp)                     # number of rows in W_K
 
-    ###########################################################################
     # Read W_V matrix
-    ###########################################################################
     la a0, W_V_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
@@ -135,19 +107,14 @@ main:
     jal ra, read_file
     
 
-    ###########################################################################
     # Parse W_V matrix from buffer
-    ###########################################################################
     la a0, W_V_MATRIX
     
     jal ra, parse_matrix_buffer
 
-    sw a0, 24(sp)                     # address of W_V
-    sw a1, 28(sp)                     # number of rows in W_V
-
-    ###########################################################################
+    sw a0, 20(sp)                     # address of W_V
+    sw a1, 24(sp)                     # number of rows in W_V
     # Read embeddings matrix
-    ###########################################################################
     la a0, EMBEDDINGS_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
@@ -155,98 +122,84 @@ main:
     jal ra, read_file
     
 
-    ###########################################################################
     # Parse vocabulary embeddings matrix from buffer
-    ###########################################################################
     la a0, VOCAB_EMBEDDINGS_MATRIX
     
     jal ra, parse_matrix_buffer # TODO
 
-    sw a0, 32(sp)                     # address of  matriz E_fich
-    sw a1, 36(sp)                     # number of rows in matriz E_fich
+    mv s3, a0                         # address of  matriz E_fich
+    sw a1, 28(sp)                     # number of rows in matriz E_fich
 
-    ###########################################################################
     # Convert input tokens to indices
-    ###########################################################################
     la a0, INPUT_INDICES_VECTOR
-    lw a2, 4(sp)
+    mv a2, s2
     lw a3, 0(sp)
 
     jal ra, tokens_to_indices
 
-    sw a0, 40(sp)                    # address of input indices vector to fill
-    sw a1, 44(sp)                    # number of tokens in input
+    sw a0, 32(sp)                    # address of input indices vector to fill
+    mv s0, a1                        # number of tokens in input
 
-    ###########################################################################
     # Build input embeddings matrix
-    ###########################################################################
     la a0, INPUT_EMBEDDINGS_MATRIX
     mv a3, a1       #n.o tokens
-    lw a1, 32(sp)   # matriz E_fich
-    lw a2, 4(sp)    # input buffer
+    mv a1, s3       # matriz E_fich
+    mv a2, s2       # input buffer
 
     jal ra, build_input_embeddings_matrix
 
-    sw a0, 48(sp)                   # address matrix E
+    mv s1, a0                   # address matrix E
 
-    ###########################################################################
     # Build matrix Q
-    ###########################################################################
     la a0, Q_MATRIX
-    lw a1, 48(sp)                   # address matrix E
-    lw a2, 44(sp)                   # n.o rows/tokens
+    mv a1, s1                       # address matrix E
+    mv a2, s0                       # n.o rows/tokens
     li a3, CONST_DIMENSION
 
-    lw a4, 8(sp)                    # address matrix W_Q
-    lw a5, 12(sp)                   # n.o rows
+    lw a4, 4(sp)                    # address matrix W_Q
+    lw a5, 8(sp)                   # n.o rows
     li a6, CONST_DIMENSION
 
     jal ra, matrix_multiply
 
-    sw a0, 52(sp)                   # address matrix Q
+    mv s4, a0                   # address matrix Q
 
-    ###########################################################################
     # Build matrix K
-    ###########################################################################
     la a0, K_MATRIX
-    lw a1, 48(sp)                   # address matrix E
-    lw a2, 44(sp)                   # n.o rows/tokens
+    mv a1, s1                       # address matrix E
+    mv a2, s0                       # n.o rows/tokens
     li a3, CONST_DIMENSION
 
-    lw a4, 16(sp)                   # address matrix W_K
-    lw a5, 20(sp)                   # n.o rows
+    lw a4, 12(sp)                   # address matrix W_K
+    lw a5, 16(sp)                   # n.o rows
     li a6, CONST_DIMENSION
 
     jal ra, matrix_multiply
 
-    sw a0, 56(sp)                   # address matrix K
+    mv s5, a0                      # address matrix K
 
 
-    ###########################################################################
     # Build matrix V
-    ###########################################################################
     la a0, V_MATRIX
-    lw a1, 48(sp)                   # address matrix E
-    lw a2, 44(sp)                   # n.o rows/tokens
+    mv a1, s1                       # address matrix E
+    mv a2, s0                       # n.o rows/tokens
     li a3, CONST_DIMENSION
 
-    lw a4, 24(sp)                   # address matrix W_V
-    lw a5, 28(sp)                   # n.o rows
+    lw a4, 20(sp)                   # address matrix W_V
+    lw a5, 24(sp)                   # n.o rows
     li a6, CONST_DIMENSION
 
     jal ra, matrix_multiply
 
-    sw a0, 60(sp)                   # address matrix V
+    mv s6, a0                  # address matrix V
 
-    ###########################################################################
     # Compute scores for the last input token
-    ###########################################################################
     la a0, SCORES_VECTOR
-    lw a1, 52(sp)                   # matriz Q*
-    lw a2, 56(sp)                   # matriz K*
-    lw a3, 44(sp)                   # rows
+    mv a1, s4                       # matrix Q*
+    mv a2, s5                       # matrix K*
+    mv a3, s0                       # rows
     li a4, CONST_DIMENSION          # colums
-    lw t0, 44(sp)                   # n.o tokens
+    mv t0, s0                       # n.o tokens
     addi t0, t0, -1                 # indice do token final
     mv a5, t0
 
@@ -254,38 +207,33 @@ main:
 
                                     # a0 -> vetor output scores*
 
-    ###########################################################################
     # Get the highest score index using argmax
-    ###########################################################################
     mv a1, a0
-    lw a2, 44(sp)     
+    mv a2, s0     
     jal ra, argmax
                                    # a1 -> index of the largest element
 
-    ###########################################################################
     # Select chosen vector in V using the index from argmax
-    ###########################################################################
     mv a4, a1
     lw a1, 60(sp)
-    lw a2, 44(sp)
+<<<<<<< HEAD
+    mv a2, s0
     lw a3, CONST_DIMENSION
+=======
+    mv a2, s0
+    li a3, CONST_DIMENSION
+
 
     jal ra, select_vector_in_matrix
 
                                   # a0 -> selected vector*
-
-    ###########################################################################
     # Pick the next token in the vocabulary with the highest score
-    ###########################################################################
-    lw a1, 32(sp)                 # matriz E_fich, esta certo?
-    lw a2, 36(sp)
+    mv a1, s3                   
+    lw a2, 28(sp)
 
     jal ra, decide_next_token
-
-    ###########################################################################
     # Terminate program successfully
-    ###########################################################################
-    addi sp, sp, 64
+    addi sp, sp, 36
     li a0, 0
     j exit_with_code                                # Exit with code 0
 
@@ -326,8 +274,8 @@ parse_matrix_buffer:
 
     li t1, 0                                        # Accumulator of number
     li t2, CONST_CHAR_NEWLINE                       # 10 -> '\n'
-    li t3, CONST_CHAR_ZERO                          # 48 -> 0 em decimal
-    li t4, 0x39                                     # 57 -> 9 em decimal
+    li t3, CONST_CHAR_ZERO                          # 48 -> 0 in decimal
+    li t4, 0x39                                     # 57 -> 9 in decimal
     li t5, 0                                        # Number of lines
     li t6, 10
     li s0, 0
@@ -395,7 +343,7 @@ parse_matrix_buffer:
         sw t1, 0(a0)
         addi t5, t5, 1
 
-    the_end:                                        # Finito
+    the_end:                                        # Finite
         mv a1, t5
         lw s0, 0(sp)
         addi sp, sp, 4
@@ -618,7 +566,7 @@ compute_scores:
     sw s6, 28(sp)
     sw s7, 32(sp)
 
-    mv s0, a1
+    mv s0, a0
     mv s1, a2
     mv s2, a3
     mv s3, a4
@@ -652,7 +600,7 @@ compute_scores:
         lw s6, 28(sp)
         lw s7, 32(sp)
         addi sp, sp, 36
-        
+        mv a0, s0
         jr ra
 
 
@@ -663,8 +611,7 @@ compute_scores:
 # (in)  a3: #cols (int)
 # (in)  a4: target row
 select_vector_in_matrix:
-    # a3*(a4-1)*4
-    addi a4, a4, -1
+    
     mul a4, a4, a3
     slli a4, a4, 2
     add a0, a4, a1
@@ -676,57 +623,61 @@ select_vector_in_matrix:
 # (in)  a0: address of target vector (int*)
 # (in)  a1: vocabulary embeddings address (int*)
 # (in)  a2: number of tokens in vocabulary (int)
-decide_next_token:  
-    mv t0, x0        # indice qque quero
-    mv t2, a2
-    li a3, 4         # n.o colunas
-    addi sp, sp, -16
-    sw a0, 0(sp)
-    sw a1, 4(sp)
-    sw a3, 8(sp)
-    sw ra, 12(sp)
-    lw a1, 0(sp)
-    lw a2, 4(sp)
+decide_next_token:   
+    addi sp, sp, -28
+    sw ra, 0(sp)
+    sw s0, 4(sp)
+    sw s1, 8(sp)
+    sw s2, 12(sp)
+    sw s3, 16(sp)
+    sw s4, 20(sp)
+    sw s5, 24(sp)
+
+    mv s0, a0
+    mv s1, a1
+    mv s2, a2
+
+    li s3, -2147483648
+    mv s4, zero
+    mv s5, zero
 
 decide_next_token_loop:
-    addi sp, sp, -8
-    sw t0, 0(sp)
-    sw t2, 4(sp)
-    
-    lw a1, 0(sp)
-    lw a2, 4(sp)
+    beq s5, s2, decide_next_token_end
 
-    jal ra, dot
+    mv a1, s0
+    mv a2, s1
+    li a3, 4
+    jal dot
 
-    lw t0, 0(sp)
-    lw t2, 4(sp)
-    addi sp, sp, 8
+    bgt a1, s3, decide_next_token_is_bigger
+    j decide_next_token_increment
 
-    bgt a1, t0, decide_next_token_e_maior
-    beq t2, x0, decide_next_token_end
-    
-decide_next_token_incrementa:
-    lw a1, 0(sp)
-    lw a2, 4(sp)
-    lw a3, 8(sp)
-    addi a2, a2, 16
-    sw a2, 4(sp)
-    addi t2, t2, -1
+decide_next_token_is_bigger:
+    mv s3, a1
+    mv s4, s5
+
+decide_next_token_increment:
+    addi s1, s1, 16
+    addi s5, s5, 1
     j decide_next_token_loop
 
-decide_next_token_e_maior:
-    mv t0, a1
-    bgt a2, x0, decide_next_token_incrementa
-
 decide_next_token_end:
-    mv a0, t0
-    lw ra, 12(sp)
-    addi sp, sp, 16
-    jr ra 
+    mv a0, s4
+    
+    lw ra, 0(sp)
+    lw s0, 4(sp)
+    lw s1, 8(sp)
+    lw s2, 12(sp)
+    lw s3, 16(sp)
+    lw s4, 20(sp)
+    lw s5, 24(sp)
+    addi sp, sp, 28
+    jr ra
 
-#############################################################################################################
+
+
 # Dot product and argmax helper functions.
-#############################################################################################################
+
 
 # (in)  a1: address of first vector (int*)
 # (in)  a2: address of second vector (int*)
@@ -826,11 +777,7 @@ argmax_end:
 exit_with_code:
     li a7, CONST_SYSCALL_EXIT2
     ecall
-
-#############################################################################################################
 # Helper functions for printing and debugging.
-#############################################################################################################
-
 .data
 PRINT_HEADER_VOCABULARY:    .string "=== Vocabulary ==="
 PRINT_HEADER_INPUT:         .string "=== Input ==="
