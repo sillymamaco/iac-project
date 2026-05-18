@@ -1,9 +1,14 @@
+###########################################################################
 # Upper bound constants for static memory reservation
+###########################################################################
 .equ CONST_DIMENSION 4
 .equ CONST_BUFFER_SIZE 1024
 .equ CONST_MAX_VOCAB_TOKENS 100
 .equ CONST_MAX_INPUT_TOKENS 10
+
+###########################################################################
 # System call constants
+###########################################################################
 .equ CONST_SYSCALL_PRINT_INT 1
 .equ CONST_SYSCALL_PRINT_STRING 4
 .equ CONST_SYSCALL_PRINT_CHAR 11
@@ -13,7 +18,10 @@
 .equ CONST_SYSCALL_CLOSE 57
 .equ CONST_SYSCALL_READ 63
 .equ CONST_SYSCALL_WRITE 64
+
+###########################################################################
 # ASCII character constants
+###########################################################################
 .equ CONST_CHAR_EOF 0
 .equ CONST_CHAR_SPACE 32
 .equ CONST_CHAR_NEWLINE 10
@@ -21,7 +29,9 @@
 .equ CONST_CHAR_ZERO 48
 
 .data
+###########################################################################
 # Data section with static memory reservations.
+###########################################################################
 VOCABULARY_FILENAME:     .string "/home/sillymamaco/iac-project/vocab.txt"
 EMBEDDINGS_FILENAME:     .string "/home/sillymamaco/iac-project/embeddings.txt"
 INPUT_FILENAME:          .string "/home/sillymamaco/iac-project/input.txt"
@@ -55,187 +65,151 @@ main:
     la a0, VOCABULARY_FILENAME
     la a1, VOCAB_BUFFER 
     li a2, CONST_BUFFER_SIZE
-
     jal ra, read_file
     
-    addi sp, sp, -36
-    sw a1, 0(sp)                       # vocabulary buffer
+    addi sp, sp, -64
+    sw a1, 0(sp)                     # vocabulary buffer
+
     # Read input
     la a0, INPUT_FILENAME
     la a1, INPUT_BUFFER 
     li a2, CONST_BUFFER_SIZE
-
     jal ra, read_file
-    
-    mv s2, a1                     # input buffer
+    sw a1, 4(sp)                     # input buffer
+
     # Read W_Q matrix
     la a0, W_Q_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
-    
     jal ra, read_file
     
-    # Parse W_Q matrix from buffer
+    # Parse W_Q matrix
     la a0, W_Q_MATRIX
-
     jal ra, parse_matrix_buffer
+    la t0, W_Q_MATRIX                # Restore base pointer
+    sw t0, 8(sp)                     
+    sw a1, 12(sp)                    
 
-    sw a0, 4(sp)                      # address of W_Q
-    sw a1, 8(sp)                     # number of rows in W_Q
-
-# Read W_K matrix
+    # Read W_K matrix
     la a0, W_K_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
-
     jal ra, read_file
     
-
-    # Parse W_K matrix from buffer
+    # Parse W_K matrix
     la a0, W_K_MATRIX
-
     jal ra, parse_matrix_buffer
-    
-    sw a0, 12(sp)                     # address of W_K
-    sw a1, 16(sp)                     # number of rows in W_K
+    la t0, W_K_MATRIX                # Restore base pointer
+    sw t0, 16(sp)                    
+    sw a1, 20(sp)                    
 
     # Read W_V matrix
     la a0, W_V_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
-
     jal ra, read_file
     
-
-    # Parse W_V matrix from buffer
+    # Parse W_V matrix
     la a0, W_V_MATRIX
-    
     jal ra, parse_matrix_buffer
+    la t0, W_V_MATRIX                # Restore base pointer
+    sw t0, 24(sp)                    
+    sw a1, 28(sp)                    
 
-    sw a0, 20(sp)                     # address of W_V
-    sw a1, 24(sp)                     # number of rows in W_V
     # Read embeddings matrix
     la a0, EMBEDDINGS_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
-
     jal ra, read_file
     
-
-    # Parse vocabulary embeddings matrix from buffer
+    # Parse vocabulary embeddings matrix
     la a0, VOCAB_EMBEDDINGS_MATRIX
-    
-    jal ra, parse_matrix_buffer # TODO
-
-    mv s3, a0                         # address of  matriz E_fich
-    sw a1, 28(sp)                     # number of rows in matriz E_fich
+    jal ra, parse_matrix_buffer 
+    la t0, VOCAB_EMBEDDINGS_MATRIX   # Restore base pointer
+    sw t0, 32(sp)                    
+    sw a1, 36(sp)                    
 
     # Convert input tokens to indices
     la a0, INPUT_INDICES_VECTOR
-    mv a2, s2
+    lw a2, 4(sp)
     lw a3, 0(sp)
-
     jal ra, tokens_to_indices
-
-    sw a0, 32(sp)                    # address of input indices vector to fill
-    mv s0, a1                        # number of tokens in input
+    sw a0, 40(sp)                    # array address
+    sw a1, 44(sp)                    # token count
 
     # Build input embeddings matrix
     la a0, INPUT_EMBEDDINGS_MATRIX
-    mv a3, a1       #n.o tokens
-    mv a1, s3       # matriz E_fich
-    mv a2, s2       # input buffer
-
+    lw a1, 32(sp)
+    lw a2, 40(sp)
+    lw a3, 44(sp)
     jal ra, build_input_embeddings_matrix
-
-    mv s1, a0                   # address matrix E
+    sw a0, 48(sp)
 
     # Build matrix Q
     la a0, Q_MATRIX
-    mv a1, s1                       # address matrix E
-    mv a2, s0                       # n.o rows/tokens
+    lw a1, 48(sp)                    
+    lw a2, 44(sp)                    
     li a3, CONST_DIMENSION
-
-    lw a4, 4(sp)                    # address matrix W_Q
-    lw a5, 8(sp)                   # n.o rows
+    lw a4, 8(sp)                     
+    lw a5, 12(sp)                    
     li a6, CONST_DIMENSION
-
     jal ra, matrix_multiply
-
-    mv s4, a0                   # address matrix Q
+    sw a0, 52(sp)
 
     # Build matrix K
     la a0, K_MATRIX
-    mv a1, s1                       # address matrix E
-    mv a2, s0                       # n.o rows/tokens
+    lw a1, 48(sp)                    
+    lw a2, 44(sp)                    
     li a3, CONST_DIMENSION
-
-    lw a4, 12(sp)                   # address matrix W_K
-    lw a5, 16(sp)                   # n.o rows
+    lw a4, 16(sp)                    
+    lw a5, 20(sp)                    
     li a6, CONST_DIMENSION
-
     jal ra, matrix_multiply
-
-    mv s5, a0                      # address matrix K
-
+    sw a0, 56(sp)
 
     # Build matrix V
     la a0, V_MATRIX
-    mv a1, s1                       # address matrix E
-    mv a2, s0                       # n.o rows/tokens
+    lw a1, 48(sp)                    
+    lw a2, 44(sp)                    
     li a3, CONST_DIMENSION
-
-    lw a4, 20(sp)                   # address matrix W_V
-    lw a5, 24(sp)                   # n.o rows
+    lw a4, 24(sp)                    
+    lw a5, 28(sp)                    
     li a6, CONST_DIMENSION
-
     jal ra, matrix_multiply
-
-    mv s6, a0                  # address matrix V
+    sw a0, 60(sp)
 
     # Compute scores for the last input token
     la a0, SCORES_VECTOR
-    mv a1, s4                       # matrix Q*
-    mv a2, s5                       # matrix K*
-    mv a3, s0                       # rows
-    li a4, CONST_DIMENSION          # colums
-    mv t0, s0                       # n.o tokens
-    addi t0, t0, -1                 # indice do token final
+    lw a1, 52(sp)                    
+    lw a2, 56(sp)                    
+    lw a3, 44(sp)                    
+    li a4, CONST_DIMENSION           
+    lw t0, 44(sp)                    
+    addi t0, t0, -1                  
     mv a5, t0
-
     jal ra, compute_scores
-
-                                    # a0 -> vetor output scores*
 
     # Get the highest score index using argmax
     mv a1, a0
-    mv a2, s0     
+    lw a2, 44(sp)     
     jal ra, argmax
-                                   # a1 -> index of the largest element
 
     # Select chosen vector in V using the index from argmax
     mv a4, a1
     lw a1, 60(sp)
-<<<<<<< HEAD
-    mv a2, s0
-    lw a3, CONST_DIMENSION
-=======
-    mv a2, s0
+    lw a2, 44(sp)
     li a3, CONST_DIMENSION
-
-
     jal ra, select_vector_in_matrix
 
-                                  # a0 -> selected vector*
     # Pick the next token in the vocabulary with the highest score
-    mv a1, s3                   
-    lw a2, 28(sp)
-
+    lw a1, 32(sp)                    
+    lw a2, 36(sp)
     jal ra, decide_next_token
+
     # Terminate program successfully
-    addi sp, sp, 36
+    addi sp, sp, 64
     li a0, 0
-    j exit_with_code                                # Exit with code 0
+    j exit_with_code                 
 
 # Read from a text file into a buffer.
 # (in)     a0: filename address (char*)
@@ -243,20 +217,20 @@ main:
 # (in)     a2: maximum number of bytes to read
 read_file:
     mv t1, a1
-	mv t2, a2
+    mv t2, a2
     li a1, 0
-    li a7, CONST_SYSCALL_OPEN						# Open File
+    li a7, CONST_SYSCALL_OPEN
     ecall
 
     mv t0, a0
     mv a1, t1
-	mv a2, t2
-    li a7, CONST_SYSCALL_READ						# Read File
+    mv a2, t2
+    li a7, CONST_SYSCALL_READ
     ecall
 
     mv t1, a0
-	mv a0, t0
-    li a7, CONST_SYSCALL_CLOSE						# Close File
+    mv a0, t0
+    li a7, CONST_SYSCALL_CLOSE
     ecall
 
     mv a0, t1
@@ -272,42 +246,42 @@ parse_matrix_buffer:
     addi sp, sp, -4
     sw s0, 0(sp)
 
-    li t1, 0                                        # Accumulator of number
-    li t2, CONST_CHAR_NEWLINE                       # 10 -> '\n'
-    li t3, CONST_CHAR_ZERO                          # 48 -> 0 in decimal
-    li t4, 0x39                                     # 57 -> 9 in decimal
-    li t5, 0                                        # Number of lines
+    li t1, 0                                        
+    li t2, CONST_CHAR_NEWLINE                       
+    li t3, CONST_CHAR_ZERO                          
+    li t4, 0x39                                     
+    li t5, 0                                        
     li t6, 10
     li s0, 0
     li a2, 0
 
     loop_parse_matrix_buffer: 
-        lbu t0, 0(a1)                               # Register for curr number
+        lbu t0, 0(a1)                               
         beq t0, x0, end_of_buffer
 
-        li t2, CONST_CHAR_HYPHEN                    # '-'
+        li t2, CONST_CHAR_HYPHEN                    
         beq t0, t2, negative
         li t2, CONST_CHAR_NEWLINE                     
 
         bgt t0, t4, not_num
         blt t0, t3, not_num
 
-        mul t1, t1, t6                              # num = num * 10 
-        addi t0, t0, -48                            # Converts to ASCII
-        add t1, t1, t0                              # num = num + dig
+        mul t1, t1, t6                              
+        addi t0, t0, -48                            
+        add t1, t1, t0                              
         
         li a2, 1
 
         addi a1, a1, 1
         j loop_parse_matrix_buffer
 
-    not_num:                                        # When it does not find a digit
+    not_num:                                        
         beq a2, x0, check_new_line                      
-        beq s0, x0,saves_in_matrix
+        beq s0, x0, saves_in_matrix
         neg t1, t1
 
     saves_in_matrix: 
-        sw t1, 0(a0)                                # Stores number in matrix
+        sw t1, 0(a0)                                
         addi a0, a0, 4                      
         li t1, 0
         li s0, 0
@@ -320,30 +294,30 @@ parse_matrix_buffer:
             addi a1, a1, 1
             j loop_parse_matrix_buffer
 
-    not_in_num:                                     # When not inside a number
+    not_in_num:                                     
         addi a1, a1, 1
         j loop_parse_matrix_buffer
 
-    negative:                                       # For negative numbers
+    negative:                                       
         li s0, 1
         addi a1, a1, 1
         j loop_parse_matrix_buffer
 
-    new_line:                                       # When it finds a '\n'
+    new_line:                                       
         addi a1, a1, 1
-        addi t5, t5, 1                              # Increase counter for return
+        addi t5, t5, 1                              
         j loop_parse_matrix_buffer
 
-    end_of_buffer:                                  # String/Buffer is over ('\0')
+    end_of_buffer:                                  
         beq a2, x0, the_end
         beq s0, x0, save_last
         neg t1, t1
     
-    save_last:                                      # In case something had still to be saved
+    save_last:                                      
         sw t1, 0(a0)
         addi t5, t5, 1
 
-    the_end:                                        # Finite
+    the_end:                                        
         mv a1, t5
         lw s0, 0(sp)
         addi sp, sp, 4
@@ -355,7 +329,6 @@ parse_matrix_buffer:
 # (in)     a2: address to input buffer
 # (in)     a3: address to vocabulary buffer
 tokens_to_indices:
-	# Calling convention moment: 
     addi sp, sp, -32                                
     sw ra, 28(sp)         
     sw s0, 24(sp)         
@@ -363,107 +336,112 @@ tokens_to_indices:
     sw s2, 16(sp)         
     sw s3, 12(sp)         
 
-    mv s0, a0										# s0 -> a0
-    li s1, 0										# s1 -> counter
-    mv s2, a2										# s2 -> a2
-    mv s3, a3										# s3 -> a3
+    mv s0, a0                                       
+    li s1, 0                                        
+    mv s2, a2                                       
+    mv s3, a3                                       
 
-	loop_token_to_indices: 
-		lbu t0, 0(s2)								# char loaded
-		beq t0, x0, end_tokens_function 			# if == '\0'
+    loop_token_to_indices: 
+        lbu t0, 0(s2)                               
+        beq t0, x0, end_tokens_function             
 
-		li t1, CONST_CHAR_SPACE	
-		beq t0, t1, skip_char						# if == ' '
-		li t1, CONST_CHAR_NEWLINE
-		beq t0, t1, skip_char						# if == '\n'
-		
-		# prepare for jal
-		mv a0, s2				
-		mv a1, s3
-		jal compare_vocab
+        li t1, CONST_CHAR_SPACE 
+        beq t0, t1, skip_char                       
+        li t1, CONST_CHAR_NEWLINE
+        beq t0, t1, skip_char                       
+        
+        # prepare for jal
+        mv a0, s2               
+        mv a1, s3
+        jal compare_vocab
 
-		# end of comparison -> increments
-		slli t4, s1, 2
-		add t5, s0, t4
-		sw a0, 0(t5)
-		addi s1, s1, 1
+        # Bounds and Error Checking
+        li t6, -1
+        beq a0, t6, skip_unknown_token
+        
+        # Store Index
+        slli t4, s1, 2
+        add t5, s0, t4
+        sw a0, 0(t5)
+        addi s1, s1, 1
+        
+        li t6, CONST_MAX_INPUT_TOKENS
+        beq s1, t6, end_tokens_function
 
-	advance_to_next_word:
-		lbu t0, 0(s2) 								# load next char
-		beq t0, x0, end_tokens_function 			# end
-		li t1, CONST_CHAR_SPACE		
-		beq t0, t1, skip_char						# if == ' '
-		li t1, CONST_CHAR_NEWLINE
-		beq t0, t1, skip_char						# if == '\n'	
-		
-		addi s2, s2, 1
-		j advance_to_next_word
+    skip_unknown_token:
 
-	skip_char: 
-		addi s2, s2, 1								# increments
-		j loop_token_to_indices
+    advance_to_next_word:
+        lbu t0, 0(s2)                               
+        beq t0, x0, end_tokens_function             
+        li t1, CONST_CHAR_SPACE     
+        beq t0, t1, skip_char                       
+        li t1, CONST_CHAR_NEWLINE
+        beq t0, t1, skip_char                       
+        
+        addi s2, s2, 1
+        j advance_to_next_word
 
-	end_tokens_function: 
-	# Calling convention moment v2.0: 
-		mv a1, s1
-		lw ra, 28(sp)
-		lw s0, 24(sp)
-		lw s1, 20(sp)
-		lw s2, 16(sp)
-		lw s3, 12(sp)
-		addi sp, sp, 32         
-		jr ra 
+    skip_char: 
+        addi s2, s2, 1                              
+        j loop_token_to_indices
 
-	compare_vocab:
-		mv t1, a1
-		li t4, 0
+    end_tokens_function: 
+        mv a1, s1
+        lw ra, 28(sp)
+        lw s0, 24(sp)
+        lw s1, 20(sp)
+        lw s2, 16(sp)
+        lw s3, 12(sp)
+        addi sp, sp, 32         
+        jr ra 
 
-	retry:
-		mv t0, a0
+    compare_vocab:
+        mv t1, a1
+        li t4, 0
 
-	compare_caracters:
-		lbu t2, 0(t0)
-		lbu t3, 0(t1)
+    retry:
+        mv t0, a0
 
-		# a lot of logic to even be able to compare them
-		li t5, CONST_CHAR_SPACE
-		beq t2, t5, end_of_token
-		li t5, CONST_CHAR_NEWLINE
-		beq t2, t5, end_of_token			
-		beq t2, x0, end_of_token
+    compare_caracters:
+        lbu t2, 0(t0)
+        lbu t3, 0(t1)
 
-		bne t2, t3, failed_token					# Not the same
+        li t5, CONST_CHAR_SPACE
+        beq t2, t5, end_of_token
+        li t5, CONST_CHAR_NEWLINE
+        beq t2, t5, end_of_token            
+        beq t2, x0, end_of_token
 
-		addi t0, t0, 1
-		addi t1, t1, 1
-		j compare_caracters
+        bne t2, t3, failed_token                    
 
-	end_of_token:
-		li t5, CONST_CHAR_NEWLINE
-		beq t3, t5, found_yey
-		beq t3, x0, found_yey
+        addi t0, t0, 1
+        addi t1, t1, 1
+        j compare_caracters
 
-	failed_token:
-		# nothing happens :(
+    end_of_token:
+        li t5, CONST_CHAR_NEWLINE
+        beq t3, t5, found_yey
+        beq t3, x0, found_yey
 
-	next_vocab:
-		lbu t3, 0(t1)
-		beq t3, x0, end_of_vocab
-		addi t1, t1, 1
-		li t5, CONST_CHAR_NEWLINE
-		bne t3, t5, next_vocab
+    failed_token:
 
-		addi t4, t4, 1 
-		j retry
+    next_vocab:
+        lbu t3, 0(t1)
+        beq t3, x0, end_of_vocab
+        addi t1, t1, 1
+        li t5, CONST_CHAR_NEWLINE
+        bne t3, t5, next_vocab
 
-	found_yey:
-		mv a0, t4									# WE ARE THE CHAMPIOOONS (plays queen)
-		jr ra
+        addi t4, t4, 1 
+        j retry
 
-	end_of_vocab:
-		li a0, -1
-		jr ra
-	# a meio cansei de comentar... i apologize	
+    found_yey:
+        mv a0, t4                                   
+        jr ra
+
+    end_of_vocab:
+        li a0, -1
+        jr ra
 
 # (in/out) a0: address of the output matrix to fill (int*)
 # (in)     a1: address of the vocabulary embeddings matrix (int*)
@@ -514,12 +492,12 @@ matrix_multiply:
             mv s2, x0
             mv s3, x0
             matrix_multiply_int_loop: beq s2, a3, matrix_multiply_end_int_loop
-                mul t0, s0, a3 #position from matrix A
+                mul t0, s0, a3 
                 add t0, s2, t0
                 slli t0, t0, 2
                 add t0, t0, a1
 
-                mul t1, s2, a6 #position of matrix B
+                mul t1, s2, a6 
                 add t1, t1, s1
                 slli t1, t1, 2
                 add t1, t1, a4
@@ -572,7 +550,7 @@ compute_scores:
     mv s3, a4
     mv s4, a5
     
-    mul t0, s3, s4 #line we are looking for
+    mul t0, s3, s4 
     slli t0, t0, 2
     add  a1, a1, t0
     mv s7, a1
@@ -603,21 +581,16 @@ compute_scores:
         mv a0, s0
         jr ra
 
-
-
 # (out) a0: address of the selected vector (int*)
 # (in)  a1: address of matrix (int*)
 # (in)  a2: #rows (int)
 # (in)  a3: #cols (int)
 # (in)  a4: target row
 select_vector_in_matrix:
-    
     mul a4, a4, a3
     slli a4, a4, 2
     add a0, a4, a1
-
     jr ra
-
 
 # (out) a0: index of the predicted token in the vocabulary (int)
 # (in)  a0: address of target vector (int*)
@@ -674,10 +647,7 @@ decide_next_token_end:
     addi sp, sp, 28
     jr ra
 
-
-
 # Dot product and argmax helper functions.
-
 
 # (in)  a1: address of first vector (int*)
 # (in)  a2: address of second vector (int*)
@@ -686,97 +656,87 @@ decide_next_token_end:
 # (out) a1: dot product result (int)
 dot:
     addi sp, sp, -4
-    sw ra, 0(sp)                                    # Save return address on the stack
-    # Initialize the result and the loop index.
-    mv t0, zero                                     # t0 will hold the result (dot product)
-    mv t1, zero                                     # t1 will be our loop index
-    # Let's see first if SIZE < 1, and jump to dot_end if that's the case.
-    slti t2, a3, 1                                  # t2 = (SIZE < 1)
-    beq t2, zero, dot_loop                          # If SIZE >= 1, we can proceed to the loop
-    li a0, 50                                       # Set a0 to 50 to indicate an error (invalid size)
-    j dot_end                                       # If SIZE < 1, jump to dot_end
+    sw ra, 0(sp)                                    
+    mv t0, zero                                     
+    mv t1, zero                                     
+    slti t2, a3, 1                                  
+    beq t2, zero, dot_loop                          
+    li a0, 50                                       
+    j dot_end                                       
 dot_loop:
-    beq t1, a3, dot_end_loop                        # If t1 == SIZE, we are done
-    lw t2, 0(a1)                                    # Load A[t1] into t2
-    lw t3, 0(a2)                                    # Load B[t1] into t3
-    mul t4, t2, t3                                  # t4 = A[t1] * B[t1]
-    # Check if the multiplication of A[t1] and B[t1] overflows
-    mulh t5, t2, t3                                 # t5 = high 32 bits of A[t1] * B[t1] (signed)
-    srai t6, t4, 31                                 # t6 = sign extension of low 32 bits (0 or -1)
-    bne t5, t6, overflow                            # Overflow if high bits != sign extension of low bits
-    mv t6, t0                                       # Store the current result in t6 for overflow checking
-    add t0, t0, t4                                  # t0 += A[t1] * B[t1]
-    # Check if the previous addition caused an overflow
-    # Careful: adding negative numbers will correctly result in a negative number, so we need to check for overflow in both directions.
-    bgt t6, zero, check_positive_overflow           # If previous result was positive, check for positive overflow
-    blt t6, zero, check_negative_overflow           # If previous result was negative, check for negative overflow
+    beq t1, a3, dot_end_loop                        
+    lw t2, 0(a1)                                    
+    lw t3, 0(a2)                                    
+    mul t4, t2, t3                                  
+    mulh t5, t2, t3                                 
+    srai t6, t4, 31                                 
+    bne t5, t6, overflow                            
+    mv t6, t0                                       
+    add t0, t0, t4                                  
+    bgt t6, zero, check_positive_overflow           
+    blt t6, zero, check_negative_overflow           
     j dot_continue_loop
 check_positive_overflow:
-    blt t4, zero, dot_continue_loop                 # If we added a negative number, we can't have a positive overflow
-    blt t0, zero, overflow                          # If t0 < 0 after adding a positive number, we have an overflow
+    blt t4, zero, dot_continue_loop                 
+    blt t0, zero, overflow                          
     j dot_continue_loop
 check_negative_overflow:
-    bgt t4, zero, dot_continue_loop                 # If we added a positive number, we can't have a negative overflow
-    bgt t0, zero, overflow                          # If t0 > 0 after adding a negative number, we have an overflow
+    bgt t4, zero, dot_continue_loop                 
+    bgt t0, zero, overflow                          
     j dot_continue_loop
 dot_continue_loop:
-    addi a1, a1, 4                                  # Move to the next element in A
-    addi a2, a2, 4                                  # Move to the next element in B
-    addi t1, t1, 1                                  # t1++
-    j dot_loop                                      # Repeat the loop
+    addi a1, a1, 4                                  
+    addi a2, a2, 4                                  
+    addi t1, t1, 1                                  
+    j dot_loop                                      
 dot_end_loop:
-    li a0, 0                                        # Set a0 to 0 to indicate success
-    mv a1, t0                                       # Move the result into a1 for return
-    j dot_end                                       # Jump to the end of the function
+    li a0, 0                                        
+    mv a1, t0                                       
+    j dot_end                                       
 overflow:
-    li a0, 200                                      # Set a0 to 200 to indicate an overflow error
-    j dot_end                                       # Jump to the end of the function
+    li a0, 200                                      
+    j dot_end                                       
 dot_end:
-    lw ra, 0(sp)                                    # Restore return address
-    addi sp, sp, 4                                  # Deallocate stack space
-    ret                                             # Return to the caller
+    lw ra, 0(sp)                                    
+    addi sp, sp, 4                                  
+    ret                                             
 
 # (in)  a1: pointer to int array
 # (in)  a2: array length
 # (out) a0: status code
 # (out) a1: index of the largest element
 argmax:
-    # Get the index of the maximum value in A, which is of size SIZE.
-    # The result will be stored in a0.
-    # If here's a draw, return the smallest index among the maximum values.
     addi sp, sp, -4
-    sw ra, 0(sp)                                    # Save return address on the stack
-    # Initialize the max value and the index of the max value.
-    lw t0, 0(a1)                                    # t0 will hold the max value
-    mv t1, zero                                     # t1 will hold the index of the max value
-    mv t2, zero                                     # t2 will be our loop index
-    # Error checking first: if SIZE < 1, we should return 50 to indicate an error.
-    slti t3, a2, 1                                  # t3 = (SIZE < 1)
-    beq t3, zero, argmax_loop                       # if SIZE >= 1, we can proceed to the loop
-    li a0, 50                                       # set a0 to 50 to indicate an error (invalid size)
-    j argmax_end                                    # if SIZE < 1, jump to argmax_end
+    sw ra, 0(sp)                                    
+    lw t0, 0(a1)                                    
+    mv t1, zero                                     
+    mv t2, zero                                     
+    slti t3, a2, 1                                  
+    beq t3, zero, argmax_loop                       
+    li a0, 50                                       
+    j argmax_end                                    
 argmax_loop:
-    # The actual loop logic.
-    beq t2, a2, argmax_end_loop                     # if t2 == SIZE, we are done
-    lw t3, 0(a1)                                    # load A[t2] into t3
-    ble t3, t0, argmax_next                         # if A[t2] <= max_value, skip to next
-    mv t0, t3                                       # max_value = A[t2]
-    mv t1, t2                                       # index_of_max = t2
+    beq t2, a2, argmax_end_loop                     
+    lw t3, 0(a1)                                    
+    ble t3, t0, argmax_next                         
+    mv t0, t3                                       
+    mv t1, t2                                       
 argmax_next:
-    addi a1, a1, 4                                  # move to the next element in A
-    addi t2, t2, 1                                  # t2++
-    j argmax_loop                                   # repeat the loop
+    addi a1, a1, 4                                  
+    addi t2, t2, 1                                  
+    j argmax_loop                                   
 argmax_end_loop:
-    mv a1, t1                                       # move the index of the max value into a1 for return
-    li a0, 0                                        # set a0 to 0 to indicate success
+    mv a1, t1                                       
+    li a0, 0                                        
 argmax_end:
-    lw ra, 0(sp)                                    # Restore return address
-    addi sp, sp, 4                                  # Deallocate stack space
-    ret                                             # return to the caller
+    lw ra, 0(sp)                                    
+    addi sp, sp, 4                                  
+    ret                                             
 
 exit_with_code:
     li a7, CONST_SYSCALL_EXIT2
     ecall
+
 # Helper functions for printing and debugging.
 .data
 PRINT_HEADER_VOCABULARY:    .string "=== Vocabulary ==="
@@ -869,16 +829,16 @@ print_scores:
 # a2: number of columns
 print_matrix:
     addi sp, sp, -24
-    sw ra, 0(sp)                                    # return address
-    sw s0, 4(sp)                                    # matrix pointer
-    sw s1, 8(sp)                                    # row index
-    sw s2, 12(sp)                                   # col index
-    sw s3, 16(sp)                                   # number of rows
-    sw s4, 20(sp)                                   # number of columns
-    mv s0, a0                                       # s0 = pointer to matrix
-    mv s3, a1                                       # s3 = number of rows
-    mv s4, a2                                       # s4 = number of columns
-    li s1, 0                                        # s1 = current row index
+    sw ra, 0(sp)                                    
+    sw s0, 4(sp)                                    
+    sw s1, 8(sp)                                    
+    sw s2, 12(sp)                                   
+    sw s3, 16(sp)                                   
+    sw s4, 20(sp)                                   
+    mv s0, a0                                       
+    mv s3, a1                                       
+    mv s4, a2                                       
+    li s1, 0                                        
     la a0, PRINT_HEADER_MATRIX
     jal println
 print_matrix_row_loop:
@@ -917,9 +877,9 @@ print_vector:
     addi sp, sp, -8
     sw s0, 0(sp)
     sw s1, 4(sp)
-    mv s0, a0                                       # s0 = pointer to vector
-    mv s1, a1                                       # s1 = number of elements
-    la a0, PRINT_VECTOR_LB                          # Print "[ "
+    mv s0, a0                                       
+    mv s1, a1                                       
+    la a0, PRINT_VECTOR_LB                          
     li a7, CONST_SYSCALL_PRINT_STRING
     ecall
 print_vector_loop:
@@ -934,7 +894,7 @@ print_vector_loop:
     addi s1, s1, -1
     j print_vector_loop
 print_vector_done:
-    la a0, PRINT_VECTOR_RB                          # Print "]"
+    la a0, PRINT_VECTOR_RB                          
     li a7, CONST_SYSCALL_PRINT_STRING
     ecall
     li a0, CONST_CHAR_NEWLINE
@@ -953,12 +913,11 @@ print_predicted_token:
     mv s0, a0
     la a0, PRINT_HEADER_NEXT_TOKEN
     jal println
-    # s0 = start of target token, print it char by char until newline or null
 print_predicted_token_char:
     lb t0, 0(s0)
-    beq t0, zero, print_predicted_token_nl          # null terminator
+    beq t0, zero, print_predicted_token_nl          
     li t1, CONST_CHAR_NEWLINE
-    beq t0, t1, print_predicted_token_nl            # newline terminator
+    beq t0, t1, print_predicted_token_nl            
     mv a0, t0
     li a7, CONST_SYSCALL_PRINT_CHAR
     ecall
@@ -972,5 +931,3 @@ print_predicted_token_nl:
     lw s0, 4(sp)
     addi sp, sp, 8
     ret
-
-
