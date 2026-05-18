@@ -58,7 +58,7 @@ main:
 
     jal ra, read_file
     
-    addi sp, sp, -64
+    addi sp, sp, -36
     sw a1, 0(sp)                       # vocabulary buffer
     # Read input
     la a0, INPUT_FILENAME
@@ -80,8 +80,8 @@ main:
 
     jal ra, parse_matrix_buffer
 
-    sw a0, 8(sp)                      # address of W_Q
-    sw a1, 12(sp)                     # number of rows in W_Q
+    sw a0, 4(sp)                      # address of W_Q
+    sw a1, 8(sp)                     # number of rows in W_Q
 
 # Read W_K matrix
     la a0, W_K_FILENAME
@@ -96,8 +96,8 @@ main:
 
     jal ra, parse_matrix_buffer
     
-    sw a0, 16(sp)                     # address of W_K
-    sw a1, 20(sp)                     # number of rows in W_K
+    sw a0, 12(sp)                     # address of W_K
+    sw a1, 16(sp)                     # number of rows in W_K
 
     # Read W_V matrix
     la a0, W_V_FILENAME
@@ -112,8 +112,8 @@ main:
     
     jal ra, parse_matrix_buffer
 
-    sw a0, 24(sp)                     # address of W_V
-    sw a1, 28(sp)                     # number of rows in W_V
+    sw a0, 20(sp)                     # address of W_V
+    sw a1, 24(sp)                     # number of rows in W_V
     # Read embeddings matrix
     la a0, EMBEDDINGS_FILENAME
     la a1, MATRIX_BUFFER 
@@ -128,7 +128,7 @@ main:
     jal ra, parse_matrix_buffer # TODO
 
     mv s3, a0                         # address of  matriz E_fich
-    sw a1, 36(sp)                     # number of rows in matriz E_fich
+    sw a1, 28(sp)                     # number of rows in matriz E_fich
 
     # Convert input tokens to indices
     la a0, INPUT_INDICES_VECTOR
@@ -137,7 +137,7 @@ main:
 
     jal ra, tokens_to_indices
 
-    sw a0, 40(sp)                    # address of input indices vector to fill
+    sw a0, 32(sp)                    # address of input indices vector to fill
     mv s0, a1                        # number of tokens in input
 
     # Build input embeddings matrix
@@ -156,13 +156,13 @@ main:
     mv a2, s0                       # n.o rows/tokens
     li a3, CONST_DIMENSION
 
-    lw a4, 8(sp)                    # address matrix W_Q
-    lw a5, 12(sp)                   # n.o rows
+    lw a4, 4(sp)                    # address matrix W_Q
+    lw a5, 8(sp)                   # n.o rows
     li a6, CONST_DIMENSION
 
     jal ra, matrix_multiply
 
-    sw a0, 52(sp)                   # address matrix Q
+    mv s4, a0                   # address matrix Q
 
     # Build matrix K
     la a0, K_MATRIX
@@ -170,13 +170,13 @@ main:
     mv a2, s0                       # n.o rows/tokens
     li a3, CONST_DIMENSION
 
-    lw a4, 16(sp)                   # address matrix W_K
-    lw a5, 20(sp)                   # n.o rows
+    lw a4, 12(sp)                   # address matrix W_K
+    lw a5, 16(sp)                   # n.o rows
     li a6, CONST_DIMENSION
 
     jal ra, matrix_multiply
 
-    sw a0, 56(sp)                   # address matrix K
+    mv s5, a0                      # address matrix K
 
 
     # Build matrix V
@@ -185,19 +185,19 @@ main:
     mv a2, s0                       # n.o rows/tokens
     li a3, CONST_DIMENSION
 
-    lw a4, 24(sp)                   # address matrix W_V
-    lw a5, 28(sp)                   # n.o rows
+    lw a4, 20(sp)                   # address matrix W_V
+    lw a5, 24(sp)                   # n.o rows
     li a6, CONST_DIMENSION
 
     jal ra, matrix_multiply
 
-    sw a0, 60(sp)                   # address matrix V
+    mv s6, a0                  # address matrix V
 
     # Compute scores for the last input token
     la a0, SCORES_VECTOR
-    lw a1, 52(sp)                   # matrix Q*
-    lw a2, 56(sp)                   # matrix K*
-    mv a3, s0                   # rows
+    mv a1, s4                       # matrix Q*
+    mv a2, s5                       # matrix K*
+    mv a3, s0                       # rows
     li a4, CONST_DIMENSION          # colums
     mv t0, s0                       # n.o tokens
     addi t0, t0, -1                 # indice do token final
@@ -215,7 +215,7 @@ main:
 
     # Select chosen vector in V using the index from argmax
     mv a4, a1
-    lw a1, 60(sp)
+    mv a1, s6
 <<<<<<< HEAD
     mv a2, s0
     lw a3, CONST_DIMENSION
@@ -229,11 +229,11 @@ main:
                                   # a0 -> selected vector*
     # Pick the next token in the vocabulary with the highest score
     mv a1, s3                   
-    lw a2, 36(sp)
+    lw a2, 28(sp)
 
     jal ra, decide_next_token
     # Terminate program successfully
-    addi sp, sp, 64
+    addi sp, sp, 36
     li a0, 0
     j exit_with_code                                # Exit with code 0
 
