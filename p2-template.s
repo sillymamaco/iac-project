@@ -193,9 +193,7 @@ main:
 
     sw a0, 60(sp)                   # address matrix V
 
-    ###########################################################################
     # Compute scores for the last input token
-    ###########################################################################
     la a0, SCORES_VECTOR
     lw a1, 52(sp)                   # matrix Q*
     lw a2, 56(sp)                   # matrix K*
@@ -219,7 +217,7 @@ main:
     mv a4, a1
     lw a1, 60(sp)
     lw a2, 44(sp)
-    lw a3, CONST_DIMENSION
+    li a3, CONST_DIMENSION
 
     jal ra, select_vector_in_matrix
 
