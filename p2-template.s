@@ -516,9 +516,9 @@ decide_next_token:
     sw s0, 4(sp)
     sw s1, 8(sp)
     sw s2, 12(sp)
-    lw s3, 16(sp)
-    lw s4, 20(sp)
-    lw s5, 24(sp)
+    sw s3, 16(sp)
+    sw s4, 20(sp)
+    sw s5, 24(sp)
 
     mv s0, a0
     mv s1, a1
@@ -529,7 +529,7 @@ decide_next_token:
     mv s5, zero
 
 decide_next_token_loop:
-    beq s2, s2, decide_next_token_end
+    beq s5, s2, decide_next_token_end
 
     mv a1, s0
     mv a2, s1
