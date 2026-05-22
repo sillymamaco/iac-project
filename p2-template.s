@@ -44,88 +44,126 @@ VOCAB_BUFFER:            .zero CONST_BUFFER_SIZE                              # 
 INPUT_BUFFER:            .zero CONST_BUFFER_SIZE                              # Contents of the input file
 MATRIX_BUFFER:           .zero CONST_BUFFER_SIZE                              # Contents of a matrix file (used for W_Q, W_K, W_V, and embeddings)
 
-INPUT_INDICES_VECTOR:    .zero (CONST_MAX_INPUT_TOKENS * 4)                   # Vector of input token indices (#inputs x 4 bytes)
-SCORES_VECTOR:           .zero (CONST_MAX_INPUT_TOKENS * 4)                   # Vector of scores (#tokens x 4 bytes)
+INPUT_INDICES_VECTOR:    .zero 40                                             # Vector of input token indices (10 x 4 bytes)
+SCORES_VECTOR:           .zero 40                                             # Vector of scores (10 x 4 bytes)
 
 INPUT_TOTAL_TOKENS:      .word 0                                              # Number of tokens in the input
 VOCAB_TOTAL_TOKENS:      .word 0                                              # Number of tokens in the vocabulary
 
-VOCAB_EMBEDDINGS_MATRIX: .zero (CONST_MAX_VOCAB_TOKENS * CONST_DIMENSION * 4) # Embedding matrix (#tokens x dimension x 4 bytes)
-INPUT_EMBEDDINGS_MATRIX: .zero (CONST_MAX_INPUT_TOKENS * CONST_DIMENSION * 4) # Embedding matrix (#tokens x dimension x 4 bytes)
-W_Q_MATRIX:              .zero (CONST_DIMENSION * CONST_DIMENSION * 4)        # W_Q matrix (dimension x dimension x 4 bytes)
-W_K_MATRIX:              .zero (CONST_DIMENSION * CONST_DIMENSION * 4)        # W_K matrix (dimension x dimension x 4 bytes)
-W_V_MATRIX:              .zero (CONST_DIMENSION * CONST_DIMENSION * 4)        # W_V matrix (dimension x dimension x 4 bytes)
-Q_MATRIX:                .zero (CONST_MAX_INPUT_TOKENS * CONST_DIMENSION * 4) # Q matrix (#tokens x dimension x 4 bytes)
-K_MATRIX:                .zero (CONST_MAX_INPUT_TOKENS * CONST_DIMENSION * 4) # K matrix (#tokens x dimension x 4 bytes)
-V_MATRIX:                .zero (CONST_MAX_INPUT_TOKENS * CONST_DIMENSION * 4) # V matrix (#tokens x dimension x 4 bytes)
+VOCAB_EMBEDDINGS_MATRIX: .zero 1600                                           # Embedding matrix (100 x 4 x 4 bytes)
+INPUT_EMBEDDINGS_MATRIX: .zero 160                                            # Embedding matrix (10 x 4 x 4 bytes)
+W_Q_MATRIX:              .zero 64                                             # W_Q matrix (4 x 4 x 4 bytes)
+W_K_MATRIX:              .zero 64                                             # W_K matrix (4 x 4 x 4 bytes)
+W_V_MATRIX:              .zero 64                                             # W_V matrix (4 x 4 x 4 bytes)
+Q_MATRIX:                .zero 160                                            # Q matrix (10 x 4 x 4 bytes)
+K_MATRIX:                .zero 160                                            # K matrix (10 x 4 x 4 bytes)
+V_MATRIX:                .zero 160                                            # V matrix (10 x 4 x 4 bytes)
+
+                                        
 
 .text
 main:
+    addi sp, sp, -64
+
     # Read vocabulary
     la a0, VOCABULARY_FILENAME
     la a1, VOCAB_BUFFER 
     li a2, CONST_BUFFER_SIZE
     jal ra, read_file
     
-    addi sp, sp, -64
-    sw a1, 0(sp)                     # vocabulary buffer
+    la t0, VOCAB_BUFFER
+    sw t0, 0(sp)
 
     # Read input
     la a0, INPUT_FILENAME
     la a1, INPUT_BUFFER 
     li a2, CONST_BUFFER_SIZE
     jal ra, read_file
-    sw a1, 4(sp)                     # input buffer
+    
+    la t0, INPUT_BUFFER
+    sw t0, 4(sp)
 
-    # Read W_Q matrix
+    # --- Clean MATRIX_BUFFER & Read W_Q matrix ---
+    la t0, MATRIX_BUFFER
+    li t1, 1024
+clear_wq:
+    sb zero, 0(t0)
+    addi t0, t0, 1
+    addi t1, t1, -1
+    bnez t1, clear_wq
+
     la a0, W_Q_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
     jal ra, read_file
     
-    # Parse W_Q matrix
     la a0, W_Q_MATRIX
+    la a1, MATRIX_BUFFER
     jal ra, parse_matrix_buffer
-    la t0, W_Q_MATRIX                # Restore base pointer
+    la t0, W_Q_MATRIX                
     sw t0, 8(sp)                     
     sw a1, 12(sp)                    
 
-    # Read W_K matrix
+    # --- Clean MATRIX_BUFFER & Read W_K matrix ---
+    la t0, MATRIX_BUFFER
+    li t1, 1024
+clear_wk:
+    sb zero, 0(t0)
+    addi t0, t0, 1
+    addi t1, t1, -1
+    bnez t1, clear_wk
+
     la a0, W_K_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
     jal ra, read_file
     
-    # Parse W_K matrix
     la a0, W_K_MATRIX
+    la a1, MATRIX_BUFFER
     jal ra, parse_matrix_buffer
-    la t0, W_K_MATRIX                # Restore base pointer
+    la t0, W_K_MATRIX                
     sw t0, 16(sp)                    
     sw a1, 20(sp)                    
 
-    # Read W_V matrix
+    # --- Clean MATRIX_BUFFER & Read W_V matrix ---
+    la t0, MATRIX_BUFFER
+    li t1, 1024
+clear_wv:
+    sb zero, 0(t0)
+    addi t0, t0, 1
+    addi t1, t1, -1
+    bnez t1, clear_wv
+
     la a0, W_V_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
     jal ra, read_file
     
-    # Parse W_V matrix
     la a0, W_V_MATRIX
+    la a1, MATRIX_BUFFER
     jal ra, parse_matrix_buffer
-    la t0, W_V_MATRIX                # Restore base pointer
+    la t0, W_V_MATRIX                
     sw t0, 24(sp)                    
     sw a1, 28(sp)                    
 
-    # Read embeddings matrix
+    # --- Clean MATRIX_BUFFER & Read embeddings matrix ---
+    la t0, MATRIX_BUFFER
+    li t1, 1024
+clear_emb:
+    sb zero, 0(t0)
+    addi t0, t0, 1
+    addi t1, t1, -1
+    bnez t1, clear_emb
+
     la a0, EMBEDDINGS_FILENAME
     la a1, MATRIX_BUFFER 
     li a2, CONST_BUFFER_SIZE
     jal ra, read_file
     
-    # Parse vocabulary embeddings matrix
     la a0, VOCAB_EMBEDDINGS_MATRIX
+    la a1, MATRIX_BUFFER
     jal ra, parse_matrix_buffer 
-    la t0, VOCAB_EMBEDDINGS_MATRIX   # Restore base pointer
+    la t0, VOCAB_EMBEDDINGS_MATRIX   
     sw t0, 32(sp)                    
     sw a1, 36(sp)                    
 
@@ -135,8 +173,8 @@ main:
     lw a3, 0(sp)
     jal ra, tokens_to_indices
     la t0, INPUT_INDICES_VECTOR
-    sw t0, 40(sp)                    # array address
-    sw a1, 44(sp)                    # token count
+    sw t0, 40(sp)                    
+    sw a1, 44(sp)                    
 
     # Build input embeddings matrix
     la a0, INPUT_EMBEDDINGS_MATRIX
@@ -192,8 +230,9 @@ main:
     jal ra, compute_scores
 
     # Get the highest score index using argmax
-    mv a1, a0
-    lw a2, 44(sp)     
+    # Explicitly load SCORES_VECTOR instead of relying on compute_scores return
+    la a1, SCORES_VECTOR
+    lw a2, 44(sp)      
     jal ra, argmax
 
     # Select chosen vector in V using the index from argmax
@@ -225,8 +264,7 @@ find_token_address_loop:
     # Terminate program successfully
         addi sp, sp, 64
         li a0, 0
-        j exit_with_code                
-
+        j exit_with_code
 # Read from a text file into a buffer.
 # (in)     a0: filename address (char*)
 # (in/out) a1: destination buffer
@@ -367,7 +405,7 @@ tokens_to_indices:
         beq t0, t1, skip_char                       
         
         # prepare for jal
-        mv a0, s2               
+        mv a0, s2                
         mv a1, s3
         jal compare_vocab
 
@@ -734,7 +772,7 @@ argmax:
 argmax_loop:
     beq t2, a2, argmax_end_loop                     
     lw t3, 0(a1)                                    
-    ble t3, t0, argmax_next                         
+    blt t3, t0, argmax_next                         
     mv t0, t3                                       
     mv t1, t2                                       
 argmax_next:
