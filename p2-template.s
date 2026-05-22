@@ -54,7 +54,7 @@ V_MATRIX:                .zero (CONST_MAX_INPUT_TOKENS * CONST_DIMENSION * 4) # 
 
 .text
 main:
-    addi sp, sp, -64
+    addi sp, sp, -64                                                          # Allocate stack space for variables
 
     # Read vocabulary
     la a0, VOCABULARY_FILENAME
@@ -62,7 +62,7 @@ main:
     li a2, CONST_BUFFER_SIZE
     jal ra, read_file
     la t0, VOCAB_BUFFER
-    sw t0, 0(sp)
+    sw t0, 0(sp)                                                              # Save vocabulary pointer to stack
 
     # Read input
     la a0, INPUT_FILENAME
@@ -70,7 +70,7 @@ main:
     li a2, CONST_BUFFER_SIZE
     jal ra, read_file
     la t0, INPUT_BUFFER
-    sw t0, 4(sp)
+    sw t0, 4(sp)                                                              # Save input buffer pointer to stack
 
     # Read W_Q matrix
     la a0, W_Q_FILENAME
@@ -83,13 +83,13 @@ main:
     la a1, MATRIX_BUFFER
     jal ra, parse_matrix_buffer
     la t0, W_Q_MATRIX                
-    sw t0, 8(sp)                     
+    sw t0, 8(sp)                                                              # Save W_Q matrix and row count
     sw a1, 12(sp)                    
 
     # Read W_K matrix 
     la t0, MATRIX_BUFFER
     li t1, 1024
-    clear_wk:                                                                 #Clear the buffer before filling
+    clear_wk:                                                                 # Clear the matrix buffer
         sb zero, 0(t0)
         addi t0, t0, 1
         addi t1, t1, -1
@@ -105,13 +105,13 @@ main:
     la a1, MATRIX_BUFFER
     jal ra, parse_matrix_buffer
     la t0, W_K_MATRIX                
-    sw t0, 16(sp)                    
+    sw t0, 16(sp)                                                             # Save W_K matrix and row count
     sw a1, 20(sp)                    
 
     # Read W_V matrix 
     la t0, MATRIX_BUFFER
     li t1, 1024
-    clear_wv:                                                                 #Clear the buffer before filling
+    clear_wv:                                                                 # Clear the matrix buffer
         sb zero, 0(t0)
         addi t0, t0, 1
         addi t1, t1, -1
@@ -127,13 +127,13 @@ main:
     la a1, MATRIX_BUFFER
     jal ra, parse_matrix_buffer
     la t0, W_V_MATRIX                
-    sw t0, 24(sp)                    
+    sw t0, 24(sp)                                                             # Save W_V matrix and row count
     sw a1, 28(sp)                    
 
     # Read embeddings matrix 
     la t0, MATRIX_BUFFER
     li t1, 1024
-    clear_emb:
+    clear_emb:                                                                # Clear the matrix buffer
         sb zero, 0(t0)
         addi t0, t0, 1
         addi t1, t1, -1
@@ -149,7 +149,7 @@ main:
     la a1, MATRIX_BUFFER
     jal ra, parse_matrix_buffer 
     la t0, VOCAB_EMBEDDINGS_MATRIX   
-    sw t0, 32(sp)                    
+    sw t0, 32(sp)                                                             # Save embeddings matrix and row count
     sw a1, 36(sp) 
 
     # Convert input tokens to indices
@@ -158,7 +158,7 @@ main:
     lw a3, 0(sp)
     jal ra, tokens_to_indices
     la t0, INPUT_INDICES_VECTOR
-    sw t0, 40(sp)                    
+    sw t0, 40(sp)                                                             # Save indices vector and token size
     sw a1, 44(sp)                    
 
     # Build input embeddings matrix
@@ -168,7 +168,7 @@ main:
     lw a3, 44(sp)
     jal ra, build_input_embeddings_matrix
     la t0, INPUT_EMBEDDINGS_MATRIX
-    sw t0, 48(sp)
+    sw t0, 48(sp)                                                             # Save input embeddings matrix pointer
 
     # Build matrix Q
     la a0, Q_MATRIX
@@ -179,7 +179,7 @@ main:
     lw a5, 12(sp)                    
     li a6, CONST_DIMENSION
     jal ra, matrix_multiply
-    sw a0, 52(sp)
+    sw a0, 52(sp)                                                             # Save constructed Q matrix
 
     # Build matrix K
     la a0, K_MATRIX
@@ -190,7 +190,7 @@ main:
     lw a5, 20(sp)                    
     li a6, CONST_DIMENSION
     jal ra, matrix_multiply
-    sw a0, 56(sp)
+    sw a0, 56(sp)                                                             # Save constructed K matrix
 
     # Build matrix V
     la a0, V_MATRIX
@@ -201,7 +201,7 @@ main:
     lw a5, 28(sp)                    
     li a6, CONST_DIMENSION
     jal ra, matrix_multiply
-    sw a0, 60(sp)
+    sw a0, 60(sp)                                                             # Save constructed V matrix
 
     # Compute scores for the last input token
     la a0, SCORES_VECTOR
@@ -257,25 +257,25 @@ main:
 # (in/out) a1: destination buffer
 # (in)     a2: maximum number of bytes to read
 read_file:
-    mv t1, a1
+    mv t1, a1                                
     mv t2, a2
     li a1, 0
-    li a7, CONST_SYSCALL_OPEN
+    li a7, CONST_SYSCALL_OPEN                                                 # File descriptor operation: open file
     ecall
 
     mv t0, a0
-    mv a1, t1
+    mv a1, t1                                                                 
     mv a2, t2
-    li a7, CONST_SYSCALL_READ
+    li a7, CONST_SYSCALL_READ                                                 # File descriptor operation: read content
     ecall
 
     mv t1, a0
     mv a0, t0
-    li a7, CONST_SYSCALL_CLOSE
+    li a7, CONST_SYSCALL_CLOSE                                                # File descriptor operation: close file
     ecall
 
-    mv a0, t1
-    jr ra
+    mv a0, t1                                                                 # Set return address to original destination
+    jr ra                                                                     
     
 # Assumes the matrix is stored in the buffer as space-separated integers.
 # Assumes columns are separated by 1 space (' '), and rows by 1 newline ('\n').
@@ -284,10 +284,10 @@ read_file:
 # (out)    a1: number of rows in the matrix (int)
 # (in)     a1: address of the buffer containing the matrix data (char*)
 parse_matrix_buffer:
-    addi sp, sp, -4
+    addi sp, sp, -4                                                           # Manage stack frame for preservation
     sw s0, 0(sp)
 
-    li t1, 0                                        
+    li t1, 0                                                                  # Initialize token parsing registers
     li t2, CONST_CHAR_NEWLINE                       
     li t3, CONST_CHAR_ZERO                          
     li t4, 0x39                                     
@@ -307,8 +307,8 @@ parse_matrix_buffer:
         bgt t0, t4, not_num
         blt t0, t3, not_num
 
-        mul t1, t1, t6                              
-        addi t0, t0, -48                            
+        mul t1, t1, t6                                                        # Accumulate ASCII digits into integer
+        addi t0, t0, -48                         
         add t1, t1, t0                              
         
         li a2, 1
@@ -322,7 +322,7 @@ parse_matrix_buffer:
         neg t1, t1
 
     saves_in_matrix: 
-        sw t1, 0(a0)                                
+        sw t1, 0(a0)                                                          # Write parsed integer element to matrix
         addi a0, a0, 4                      
         li t1, 0
         li s0, 0
@@ -346,7 +346,7 @@ parse_matrix_buffer:
 
     new_line:                                       
         addi a1, a1, 1
-        addi t5, t5, 1                              
+        addi t5, t5, 1                                                        # Track complete row increments
         j loop_parse_matrix_buffer
 
     end_of_buffer:                                  
@@ -360,7 +360,7 @@ parse_matrix_buffer:
 
     the_end:                                        
         mv a1, t5
-        lw s0, 0(sp)
+        lw s0, 0(sp)                                                          # Restore context and pop stack
         addi sp, sp, 4
         jr ra
 
@@ -370,14 +370,14 @@ parse_matrix_buffer:
 # (in)     a2: address to input buffer
 # (in)     a3: address to vocabulary buffer
 tokens_to_indices:
-    addi sp, sp, -32                                
+    addi sp, sp, -32                                                          # Construct stack frame for nested calls
     sw ra, 28(sp)         
     sw s0, 24(sp)         
     sw s1, 20(sp)         
     sw s2, 16(sp)         
     sw s3, 12(sp)         
 
-    mv s0, a0                                       
+    mv s0, a0                                                                 # Preserve base pointers locally
     li s1, 0                                        
     mv s2, a2                                       
     mv s3, a3                                       
@@ -398,7 +398,7 @@ tokens_to_indices:
         li t6, -1
         beq a0, t6, skip_unknown_token
         
-        slli t4, s1, 2
+        slli t4, s1, 2                                                        # Save calculated offset target index
         add t5, s0, t4
         sw a0, 0(t5)
         addi s1, s1, 1
@@ -425,11 +425,11 @@ tokens_to_indices:
 
     end_tokens_function: 
         mv a1, s1
-        lw ra, 28(sp)
-        lw s0, 24(sp)
-        lw s1, 20(sp)
-        lw s2, 16(sp)
-        lw s3, 12(sp)
+        lw ra, 28(sp)                                                         # Restore full execution tracking frame
+        lw s0, 24(sp)         
+        lw s1, 20(sp)         
+        lw s2, 16(sp)         
+        lw s3, 12(sp)         
         addi sp, sp, 32         
         jr ra 
 
@@ -486,7 +486,7 @@ tokens_to_indices:
 # (in)     a2: address of the input indices array (int*)
 # (in)     a3: number of tokens in the input (int)
 build_input_embeddings_matrix: 
-    li t0, CONST_DIMENSION
+    li t0, CONST_DIMENSION                                                    # Compute byte dimension per matrix line
     li t6, CONST_DIMENSION
     slli t0, t0, 2
 
@@ -498,7 +498,7 @@ build_input_embeddings_matrix:
         mv t4, x0
         build_input_embeddings_matrix_int_loop: beq t4, t6, build_input_embeddings_matrix_end_int_loop
             lw t5, 0(t3)
-            sw t5, 0(a0)
+            sw t5, 0(a0)                                                      # Copy element from global to input matrix
             addi t3, t3, 4
             addi a0, a0, 4
             addi t4, t4, 1
@@ -518,7 +518,7 @@ build_input_embeddings_matrix:
 # (in)     a5: #rows of the second matrix (int)
 # (in)     a6: #columns of the second matrix (int)
 matrix_multiply: 
-    addi sp, sp, -16
+    addi sp, sp, -16                                                          # Save s-registers before matrix nested loops
     sw s0, 12(sp)
     sw s1, 8(sp)
     sw s2, 4(sp)
@@ -530,12 +530,12 @@ matrix_multiply:
             mv s2, x0
             mv s3, x0
             matrix_multiply_int_loop: beq s2, a3, matrix_multiply_end_int_loop
-                mul t0, s0, a3 
+                mul t0, s0, a3                                                # Calculate source 1 element coordinate
                 add t0, s2, t0
                 slli t0, t0, 2
                 add t0, t0, a1
 
-                mul t1, s2, a6 
+                mul t1, s2, a6                                                # Calculate source 2 element coordinate
                 add t1, t1, s1
                 slli t1, t1, 2
                 add t1, t1, a4
@@ -543,7 +543,7 @@ matrix_multiply:
                 lw t2, 0(t0)
                 lw t3, 0(t1)
                 mul t2, t2, t3 
-                add s3, s3, t2
+                add s3, s3, t2                                                # Accumulate partial dot-product values
 
                 addi s2, s2, 1
                 j matrix_multiply_int_loop
@@ -551,13 +551,13 @@ matrix_multiply:
                 add t4, t4, s1
                 slli t4, t4, 2
                 add t4, t4, a0
-                sw s3, 0(t4)
+                sw s3, 0(t4)                                                  # Save total accumulated cell value
                 addi s1, s1, 1
                 j matrix_multiply_mid_loop
             matrix_multiply_end_mid_loop: addi s0, s0, 1
                 j matrix_multiply_ext_loop
     matrix_multiply_end_ext_loop:
-        lw s0, 12(sp)
+        lw s0, 12(sp)                                                         # Pop s-registers off the call stack
         lw s1, 8(sp)
         lw s2, 4(sp)
         lw s3, 0(sp)
@@ -571,7 +571,7 @@ matrix_multiply:
 # (in)     a4: #columns of Q and K (int)
 # (in)     a5: target token index for which we want to compute the score (int)
 compute_scores:
-    addi sp, sp, -36
+    addi sp, sp, -36                                                          # Allocate frame space for dot routine dependencies
     sw ra, 0(sp)
     sw s0, 4(sp)
     sw s1, 8(sp)
@@ -582,7 +582,7 @@ compute_scores:
     sw s6, 28(sp)
     sw s7, 32(sp)
 
-    mv s0, a0
+    mv s0, a0                                                                 # Cache tracking records in safe s-registers
     mv s1, a2
     mv s2, a3
     mv s3, a4
@@ -598,7 +598,7 @@ compute_scores:
         mv a2, s1
         mv a3, s3
         mv a1, s7
-        jal dot
+        jal dot                                                               # Perform dot product evaluation sequence
         sw a1, 0(s6)
         addi s6, s6, 4
         slli t0, s3, 2
@@ -606,7 +606,7 @@ compute_scores:
         addi s5, s5, 1
         j compute_scores_loop
     compute_scores_end_loop:
-        lw ra, 0(sp)
+        lw ra, 0(sp)                                                          # Fully restore frame tracking context registers
         lw s0, 4(sp) 
         lw s1, 8(sp)
         lw s2, 12(sp)
@@ -625,7 +625,7 @@ compute_scores:
 # (in)  a3: #cols (int)
 # (in)  a4: target row
 select_vector_in_matrix:
-    mul a4, a4, a3
+    mul a4, a4, a3                                                            # Transform coordinate index to linear offset
     slli a4, a4, 2
     add a0, a4, a1
     jr ra
@@ -635,7 +635,7 @@ select_vector_in_matrix:
 # (in)  a1: vocabulary embeddings address (int*)
 # (in)  a2: number of tokens in vocabulary (int)
 decide_next_token:   
-    addi sp, sp, -28
+    addi sp, sp, -28                                                          # Reserve frame spaces for functional nested step
     sw ra, 0(sp)
     sw s0, 4(sp)
     sw s1, 8(sp)
@@ -648,7 +648,7 @@ decide_next_token:
     mv s1, a1
     mv s2, a2
 
-    li s3, -2147483648
+    li s3, -2147483648                                                        # Set default comparison bound to MIN_INT
     mv s4, zero
     mv s5, zero
 
@@ -664,7 +664,7 @@ decide_next_token_loop:
     j decide_next_token_increment
 
 decide_next_token_is_bigger:
-    mv s3, a1
+    mv s3, a1                                                                 # Update running tracking targets
     mv s4, s5
 
 decide_next_token_increment:
@@ -675,7 +675,7 @@ decide_next_token_increment:
 decide_next_token_end:
     mv a0, s4
     
-    lw ra, 0(sp)
+    lw ra, 0(sp)                                                          # Unwind stack context state configurations
     lw s0, 4(sp)
     lw s1, 8(sp)
     lw s2, 12(sp)
