@@ -32,13 +32,13 @@
 ###########################################################################
 # Data section with static memory reservations.
 ###########################################################################
-VOCABULARY_FILENAME:     .string "/home/sillymamaco/iac-project/vocab.txt"
-EMBEDDINGS_FILENAME:     .string "/home/sillymamaco/iac-project/embeddings.txt"
-INPUT_FILENAME:          .string "/home/sillymamaco/iac-project/input.txt"
+VOCABULARY_FILENAME:     .string "vocab.txt"
+EMBEDDINGS_FILENAME:     .string "embeddings.txt"
+INPUT_FILENAME:          .string "input.txt"
 
-W_Q_FILENAME:            .string "/home/sillymamaco/iac-project/W_Q.txt"
-W_K_FILENAME:            .string "/home/sillymamaco/iac-project/W_K.txt"
-W_V_FILENAME:            .string "/home/sillymamaco/iac-project/W_V.txt"
+W_Q_FILENAME:            .string "W_Q.txt"
+W_K_FILENAME:            .string "W_K.txt"
+W_V_FILENAME:            .string "W_V.txt"
 
 VOCAB_BUFFER:            .zero CONST_BUFFER_SIZE                              # Contents of the vocabulary file
 INPUT_BUFFER:            .zero CONST_BUFFER_SIZE                              # Contents of the input file
