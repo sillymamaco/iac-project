@@ -648,9 +648,15 @@ decide_next_token:
     mv s1, a1
     mv s2, a2
 
-    li s3, -2147483648                                                        # Set default comparison bound to MIN_INT
-    mv s4, zero
     mv s5, zero
+    mv a1, s0
+    mv a2, s1
+    li a3, 4
+    jal dot
+    mv s3, a1                                                                 # Initialize s3 with first dot product
+    mv s4, zero                                                               # Initialize best index to 0
+    addi s5, s5, 1                                                            # Start from second vector
+    addi s1, s1, 16                                                           # Move to second embedding
 
 decide_next_token_loop:
     beq s5, s2, decide_next_token_end
